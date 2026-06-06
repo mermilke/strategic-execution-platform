@@ -1,6 +1,6 @@
 # Strategic Tracker
 
-[![CI](https://github.com/mermilke/Strategic-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/Strategic-Tracker/actions/workflows/ci.yml)
+[![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
 A small web app for keeping a leadership team aligned week to week. Each direct
 report logs a quick weekly check-in against their strategic objectives, and the
