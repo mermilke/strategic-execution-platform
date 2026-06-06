@@ -1,0 +1,63 @@
+name: Daily reminder emails
+
+# Pings /api/cron/reminders so each region's direct reports get the email at
+# exactly 4pm in their own local time. The endpoint matches a DR only when
+# their local hour is 16, so we fire at multiple UTC times to cover each
+# timezone × DST combination. reminder_log dedupes per-week.
+#
+# UTC times → 4pm local in:
+#   08:00 → Shanghai (UTC+8)
+#   09:00 → Bangkok  (UTC+7)
+#   14:00 → Berlin CEST summer (UTC+2)
+#   15:00 → Berlin CET winter  (UTC+1)
+#   21:00 → Chicago CDT summer (UTC-5)
+#   22:00 → Chicago CST winter (UTC-6) AND Mexico City year-round (UTC-6)
+
+on:
+  schedule:
+    - cron: '0 8  * * 1-5'
+    - cron: '0 9  * * 1-5'
+    - cron: '0 14 * * 1-5'
+    - cron: '0 15 * * 1-5'
+    - cron: '0 21 * * 1-5'
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      test_email:
+        description: 'Send one-off test email to this DR (skips time/dedupe checks). Leave blank for normal run.'
+        required: false
+        default: ''
+
+jobs:
+  ping-reminder-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit reminder endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Set this to your deployed base URL (no trailing slash) under
+          # Settings → Secrets and variables → Actions → Variables.
+          APP_URL: ${{ vars.APP_URL }}
+          TEST_EMAIL: ${{ inputs.test_email }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::APP_URL repository variable is not set"
+            exit 1
+          fi
+          if [ -n "$TEST_EMAIL" ]; then
+            url="$APP_URL/api/cron/reminders?test=1&email=$TEST_EMAIL"
+            echo "TEST MODE: $url"
+          else
+            url="$APP_URL/api/cron/reminders"
+          fi
+          response=$(curl -sS -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$url")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "Status: $status"
+          echo "Body: $body"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Reminder endpoint returned $status"
+            exit 1
+          fi
