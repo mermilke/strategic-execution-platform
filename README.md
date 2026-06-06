@@ -52,7 +52,8 @@ For the leader or an admin:
 - An analytics view with trends across the team.
 - A Weekly Briefing: a Claude-generated summary of the week, with a headline,
   risks, momentum, and per-person talking points for upcoming 1:1s. It streams
-  in, gets cached per week, and records token usage and cost.
+  in as the model writes it and is cached per week, with the token usage and
+  cost recorded alongside each one.
 - 1:1 notes: a shared notes pad per person per week that syncs in real time,
   takes file and link attachments, and shows the next scheduled 1:1 from the
   calendar.
@@ -156,7 +157,7 @@ timezone-aware reminder logic, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Running it locally
 
-You'll need Node.js 18+ and a free [Supabase](https://supabase.com) project.
+You'll need Node.js 20+ and a free [Supabase](https://supabase.com) project.
 
 1. Install dependencies:
    ```bash
@@ -231,5 +232,5 @@ Things I'd build next, roughly in order of value:
 ## License
 
 Copyright © 2026. All rights reserved. The code is here to read, not to reuse
-(see [NOTICE](NOTICE)). It isn't licensed for reuse, redistribution, or
+(see [LICENSE](LICENSE)). It isn't licensed for reuse, redistribution, or
 deployment.

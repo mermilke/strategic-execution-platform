@@ -53,7 +53,7 @@ This is the most involved feature. The flow:
    week -- each report's objectives, this-week vs last-week check-ins (so the
    model can spot changes), opportunities, recent 1:1 notes, and a best-effort
    calendar pull for upcoming 1:1s. It's deliberately separate from the route so
-   the context shape can be reasoned about on its own.
+   I can test and tweak the context without touching the streaming code.
 2. `app/api/ai/insights/route.js` sends that to Claude Sonnet through the Vercel
    AI Gateway with a Zod schema, so the model returns structured sections
    (headline, risks, momentum, talking points) rather than free text.
@@ -71,8 +71,7 @@ error. The rest of the dashboard is unaffected.
 ## Timezone-aware reminders
 
 The reminder engine (`app/api/cron/reminders/route.js`) is the other piece worth
-calling out, because the timezone handling is where most "send an email before
-the meeting" systems get sloppy.
+calling out, mostly for the timezone handling.
 
 - Each report has their own IANA timezone. A reminder should land at 4pm in
   *their* clock, so the GitHub Actions cron pings the endpoint at several UTC

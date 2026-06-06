@@ -9,20 +9,20 @@ export async function GET(request) {
 
   if (error) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msError=${error}`
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=${error}`
     )
   }
 
   if (!code || !state) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msError=missing_params`
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=missing_params`
     )
   }
 
   const clientId = process.env.AZURE_CLIENT_ID
   const clientSecret = process.env.AZURE_CLIENT_SECRET
   const tenantId = process.env.AZURE_TENANT_ID
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/api/auth/callback`
+  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/callback`
 
   try {
     // swap the code for tokens
@@ -43,7 +43,7 @@ export async function GET(request) {
       const err = await tokenRes.text()
       console.error('Token exchange failed:', err)
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msError=token_failed`
+        `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=token_failed`
       )
     }
 
@@ -67,17 +67,17 @@ export async function GET(request) {
     if (upsertError) {
       console.error('Token storage failed:', upsertError)
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msError=storage_failed`
+        `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=storage_failed`
       )
     }
 
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msConnected=true`
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msConnected=true`
     )
   } catch (err) {
     console.error('OAuth callback error:', err)
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/meeting?msError=unknown`
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/meeting?msError=unknown`
     )
   }
 }

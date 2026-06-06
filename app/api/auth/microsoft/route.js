@@ -10,7 +10,7 @@ export async function GET(request) {
 
   const clientId = process.env.AZURE_CLIENT_ID
   const tenantId = process.env.AZURE_TENANT_ID
-  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ceo-strategic-tracker.vercel.app'}/api/auth/callback`
+  const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/callback`
 
   const scope = 'User.Read Calendars.Read Calendars.Read.Shared Notes.Read Notes.Read.All offline_access'
 
