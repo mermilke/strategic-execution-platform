@@ -1,0 +1,7 @@
+<svg width="232" height="48" viewBox="0 0 232 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strategic Tracker">
+  <rect x="0" y="0" width="48" height="48" rx="11" fill="#0F172A"/>
+  <rect x="11" y="27" width="6" height="10" rx="2" fill="#93C5FD"/>
+  <rect x="21" y="20" width="6" height="17" rx="2" fill="#3B82F6"/>
+  <rect x="31" y="11" width="6" height="26" rx="2" fill="#2563EB"/>
+  <text x="62" y="31" font-family="'DM Sans', 'Segoe UI', Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="-0.3" fill="#0F172A">Strategic Tracker</text>
+</svg>

@@ -1,0 +1,155 @@
+# Strategic Tracker
+
+A small web app for keeping a leadership team aligned week to week. Each direct
+report logs a quick weekly check-in against their strategic objectives, and the
+leader gets a live dashboard showing what's on track, what's at risk, who needs
+help, and what to bring up in the next 1:1. There's also an AI-written Monday
+briefing that sums up the week.
+
+I built it as an internal tool for one executive team, then generalized it into
+the version here.
+
+It's source-available, not open source. See [License](#license).
+
+## What it does
+
+For direct reports:
+
+- A weekly check-in form that pre-fills last week's status for each
+  sub-objective, so an update takes about a minute.
+- Each item captures a status (on track, at risk, off track, on hold, not
+  started, completed), whether any progress was made, a "needs support" flag, a
+  "discuss in the 1:1" flag, and free-text comments.
+
+For the leader or an admin:
+
+- A team overview with one tile per person, showing every objective and
+  sub-objective at a glance and color-coded by status. Anything that hasn't
+  moved in a couple of weeks picks up a stale counter.
+- Filters for the things you actually chase: missing submissions, at-risk
+  items, anything flagged for support, or items with no recent update.
+- Per-person history with the full week-by-week trail for any objective.
+- Opportunity objectives, which are a different kind of goal measured by a count
+  (say, "close 5 enterprise pilots") with the individual deals listed under it.
+- An analytics view with trends across the team.
+- A Weekly Briefing: a Claude-generated summary of the week, with a headline,
+  risks, momentum, and per-person talking points for upcoming 1:1s. It streams
+  in, gets cached per week, and records token usage and cost.
+- 1:1 notes: a shared notes pad per person per week that syncs in real time,
+  takes file and link attachments, and shows the next scheduled 1:1 from the
+  calendar.
+
+Automation:
+
+- Reminder emails that arrive at 4pm in each direct report's own timezone, the
+  day before their 1:1. The logic reads the calendar, so it can tell "not due
+  yet" from "overdue" from "your 1:1 was cancelled," and it stops once the
+  check-in is in.
+
+## Tech stack
+
+- Next.js 14 (App Router) and React 18
+- Supabase for Postgres, auth, row-level security, Realtime, and storage
+- The Vercel AI SDK over the Vercel AI Gateway, using Claude Sonnet for the
+  briefing (structured output with Zod, plus prompt caching)
+- Resend for the reminder email
+- Microsoft Graph for the shared 1:1 calendar (optional)
+- The Smartsheet API for an optional extra discussion feed
+- Recharts, date-fns, and Tailwind CSS
+- Runs on Vercel; the reminder cron is driven by GitHub Actions
+
+## How it's put together
+
+```
+app/
+  page.js                 Entry point; routes to login or dashboard
+  login/  reset-password/ Supabase email/password and magic-link auth
+  dashboard/              Renders the CEO or direct-report view by role
+  checkin/                The weekly check-in form
+  meeting/                1:1 notes, attachments, next-meeting lookup
+  admin/                  Manage people and objectives
+  api/
+    ai/insights/          Streams and caches the weekly briefing
+    calendar/             Microsoft Graph calendar reads
+    cron/reminders/       Timezone- and calendar-aware reminder emails
+    smartsheet/           Optional "Other Topics" feed
+    auth/  admin/         OAuth callback, admin password reset
+components/               Dashboards, briefing UI, charts, navbar, badges
+lib/
+  supabase.js  auth.js    Browser and server Supabase clients
+  briefing-context.js     Assembles the data the briefing model sees
+  utils.js                Week math and status config
+supabase_setup.sql        Schema, row-level security, triggers
+seed.sql                  Fictional demo team (optional)
+```
+
+Access control lives in Postgres. Every table has row-level security, so a
+direct report can only read and write their own objectives and check-ins, while
+the leader and admins see everyone. The server-only routes (briefing, cron,
+admin password reset) use the service-role key and never run in the browser.
+
+## Running it locally
+
+You'll need Node.js 18+ and a free [Supabase](https://supabase.com) project.
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Copy `.env.example` to `.env.local` and fill in at least the Supabase keys
+   and `NEXT_PUBLIC_SITE_URL`. The other blocks are optional; the app runs
+   without them, you just don't get that feature.
+
+3. Open the Supabase SQL editor and run [`supabase_setup.sql`](supabase_setup.sql)
+   to create the schema.
+
+4. Optionally run [`seed.sql`](seed.sql) to load a fictional team to click
+   around. Sign in with any of the seeded addresses (for example the CEO,
+   `jordan.hayes@example.com`) using the password `demo1234`.
+
+5. Start it:
+   ```bash
+   npm run dev
+   ```
+   The app runs at http://localhost:3000.
+
+If you skip the seed, sign up through the app and then change your row's `role`
+to `admin` in the Supabase `users` table to get the leader views.
+
+## Tests
+
+Unit tests cover the date and status logic with [Vitest](https://vitest.dev):
+
+```bash
+npm test
+```
+
+GitHub Actions runs the tests and a production build on every push and pull
+request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+## Deploying
+
+Import the repo into Vercel and add the same environment variables in the
+project settings. The reminder schedule lives in
+[`.github/workflows/reminder-cron.yml`](.github/workflows/reminder-cron.yml),
+which pings the deployed `/api/cron/reminders` endpoint at a handful of UTC
+times so it catches 4pm in each region. Set an `APP_URL` Actions variable (your
+deployed base URL) and a `CRON_SECRET` Actions secret that matches the
+`CRON_SECRET` you set on Vercel.
+
+## Optional integrations
+
+- The **AI briefing** needs `AI_GATEWAY_API_KEY`. Leave it out and everything
+  else still works; the briefing card just stays dormant.
+- The **calendar** needs an Azure AD app with delegated `Calendars.Read.Shared`
+  and `CEO_CALENDAR_EMAIL` set to the shared mailbox. It drives the "next 1:1"
+  lookup and the reminder timing.
+- **Reminder email** needs a Resend API key and a verified sender address.
+- **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
+
+## License
+
+Copyright © 2026. All rights reserved. The code is here to read, not to reuse
+(see [NOTICE](NOTICE)). It isn't licensed for reuse, redistribution, or
+deployment.

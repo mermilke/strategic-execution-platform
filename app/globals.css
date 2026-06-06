@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'DM Sans', sans-serif;
+
+  /* Brand palette */
+  --brand-blue: #2563EB;
+  --brand-blue-dark: #1D4ED8;
+  --brand-blue-light: #3B82F6;
+  --brand-red: #D62027;
+  --brand-red-dark: #B71C1C;
+  --brand-slate: #35474F;
+  --brand-slate-mid: #495960;
+  --brand-slate-light: #5D6C72;
+
+  /* app surfaces, light theme */
+  --bg-base: #F1F5F9;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #E2E8F0;
+  --border: rgba(37, 99, 235,0.28);
+  --border-subtle: rgba(0,0,0,0.1);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* display font, tight + condensed */
+.font-display {
+  font-family: 'DM Sans', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.status-pulse { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* Weekly Briefing typewriter cursor */
+@keyframes blinkCursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* card hover glow */
+.card-hover {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card-hover:hover {
+  border-color: rgba(37, 99, 235,0.4) !important;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235,0.1);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235,0.6) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235,0.12);
+}
+
+.btn-brand {
+  background: rgba(37, 99, 235,0.15);
+  color: var(--brand-blue-dark);
+  border: 1px solid rgba(37, 99, 235,0.3);
+  transition: all 0.2s;
+}
+.btn-brand:hover {
+  background: rgba(37, 99, 235,0.25);
+  border-color: rgba(37, 99, 235,0.5);
+}
+
+.accent-red {
+  color: var(--brand-red);
+}
+
+/* diagonal stripe on the login page */
+.brand-stripe {
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-slate) 100%);
+}

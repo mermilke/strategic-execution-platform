@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strategic Tracker">
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <rect x="120" y="288" width="56" height="104" rx="14" fill="#93C5FD"/>
+  <rect x="228" y="216" width="56" height="176" rx="14" fill="#3B82F6"/>
+  <rect x="336" y="120" width="56" height="272" rx="14" fill="#2563EB"/>
+</svg>
