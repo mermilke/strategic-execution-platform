@@ -15,6 +15,20 @@ the version here.
 
 It's source-available, not open source. See [License](#license).
 
+## Screenshots
+
+The CEO's team overview, with every report's objectives at a glance:
+
+![CEO dashboard](docs/screenshots/dashboard.png)
+
+| Weekly check-in | A direct report's dashboard |
+| --- | --- |
+| ![Weekly check-in form](docs/screenshots/checkin.png) | ![Direct report dashboard](docs/screenshots/report-dashboard.png) |
+
+| Shared 1:1 notes | Managing people and objectives |
+| --- | --- |
+| ![1:1 notes](docs/screenshots/meeting.png) | ![Manage team](docs/screenshots/manage-team.png) |
+
 ## What it does
 
 For direct reports:
