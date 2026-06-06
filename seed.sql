@@ -227,4 +227,49 @@ END $$;
 DROP FUNCTION IF EXISTS _seed_sub(uuid, uuid, text, text, int, text[], text, text, boolean, int);
 DROP FUNCTION IF EXISTS _seed_obj(uuid, text, text, int, int);
 
+-- A pre-generated weekly briefing for the current week, so the briefing card
+-- has something to show without an AI key. It follows up on the 1:1 notes above.
+INSERT INTO ai_briefings
+  (week_start, content, model, input_tokens, output_tokens, cached_tokens, cost_cents, latency_ms, generated_by, generated_at)
+VALUES (
+  date_trunc('week', now())::date,
+  $j$
+  {
+    "headline": "Steady week with two clear wins: Priya shipped the API latency goal early and Dana's activation instrumentation is done. The drags are Sofia's marketing-site replatform, off track for a third week, and a couple of reports who haven't checked in yet.",
+    "top_items": [
+      "Priya hit the p95 latency target early, now live in production at 180ms.",
+      "Mateo is at 4 of 6 LATAM pilots, but the reseller channel is stuck in legal.",
+      "Sofia's site replatform is off track for a third week and has no check-in this week."
+    ],
+    "risks": [
+      {"item": "Marketing-site replatform off track three weeks running; the demand-gen timeline is slipping.", "owner_name": "Sofia Costa", "severity": "high"},
+      {"item": "EUR billing is on hold pending a payments-vendor decision, which blocks EU onboarding.", "owner_name": "Dana Whitfield", "severity": "medium"},
+      {"item": "The reseller agreement is stuck in legal, so the first two resellers are unsigned.", "owner_name": "Mateo Alvarez", "severity": "medium"},
+      {"item": "The committed-use cloud discount needs finance sign-off before quarter end.", "owner_name": "Noah Kim", "severity": "low"}
+    ],
+    "momentum": [
+      {"item": "p95 API latency cut to 180ms and shipped to production.", "owner_name": "Priya Nair"},
+      {"item": "Activation funnel instrumentation completed; baseline now measured at 41%.", "owner_name": "Dana Whitfield"},
+      {"item": "Fourth LATAM enterprise pilot signed this week.", "owner_name": "Mateo Alvarez"},
+      {"item": "Technical SEO audit finished with 30 fixes filed.", "owner_name": "Sofia Costa"}
+    ],
+    "talking_points": [
+      {"dr_name": "Dana Whitfield", "upcoming_meeting_label": null, "points": ["Last 1:1 you committed to picking the payments vendor by Friday, is EUR billing unblocked yet?", "The setup wizard is unblocked; confirm the beta ship date."]},
+      {"dr_name": "Priya Nair", "upcoming_meeting_label": null, "points": ["Latency goal landed early, agree how to timebox the cache work you flagged last week.", "Typed-client migration started with billing; what's the next service?"]},
+      {"dr_name": "Mateo Alvarez", "upcoming_meeting_label": null, "points": ["You said last week you'd ping legal about the reseller agreement, any movement?", "4 of 6 pilots signed; what's the path to the final two?"]},
+      {"dr_name": "Sofia Costa", "upcoming_meeting_label": null, "points": ["Site replatform is still off track and there's no check-in this week, does the new vendor have firm dates?"]},
+      {"dr_name": "Noah Kim", "upcoming_meeting_label": null, "points": ["The committed-use discount needs finance sign-off, want help escalating before quarter end?"]}
+    ],
+    "data_caveats": [
+      "Sofia Costa and Liam O'Brien each left an item without a check-in this week.",
+      "No 1:1 times are shown because the calendar integration is off in this demo."
+    ]
+  }
+  $j$::jsonb,
+  'anthropic/claude-sonnet-4.6', 3180, 540, 0, 2, 4280,
+  (SELECT id FROM users WHERE email = 'jordan.hayes@example.com'),
+  now()
+)
+ON CONFLICT (week_start) DO UPDATE SET content = EXCLUDED.content, generated_at = EXCLUDED.generated_at;
+
 -- Sign in with any address above and password: demo1234

@@ -2,6 +2,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatWeekLabel } from '../lib/utils'
 
+// On the public demo the briefing is view-only: visitors see the cached
+// briefing but can't trigger a paid generation.
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+
 // Weekly briefing card: streams a 5-section exec briefing for the selected week
 // (Claude Sonnet via Vercel AI Gateway). Loads any cached briefing on week change;
 // Generate/Regenerate hit the streaming POST endpoint.
@@ -181,12 +185,12 @@ export default function WeeklyBriefing({ selectedWeek, currentUser }) {
               Generating…
             </span>
           )}
-          {status === 'no_briefing' && !showSpinner && !collapsed && (
+          {status === 'no_briefing' && !showSpinner && !collapsed && !DEMO_MODE && (
             <button onClick={() => runStream(false)} style={btnPrimary}>
               ✨ Generate briefing
             </button>
           )}
-          {canRegenerate && status !== 'no_briefing' && !collapsed && (
+          {canRegenerate && status !== 'no_briefing' && !collapsed && !DEMO_MODE && (
             <button
               onClick={() => runStream(true)}
               style={btnGhost}

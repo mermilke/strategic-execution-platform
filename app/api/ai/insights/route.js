@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { streamObject } from 'ai'
 import { z } from 'zod'
 import { getAuthenticatedUser } from '../../../../lib/auth'
@@ -102,6 +104,7 @@ RULES:
   - If the DR's most recent scheduled 1:1 this week was CANCELLED and no replacement is on the calendar yet → frame as "1:1 cancelled; check-in not late — awaiting reschedule". DO NOT say "missed".
   - Only call a check-in "missed" / "didn't submit" if a confirmed 1:1 already happened this week AND no check-in exists. That is a real miss.
   - This applies to the headline too. If neither DR has a real miss, the headline should NOT say they "didn't submit" — describe the actual situation (e.g. "Quiet week — Dana's 1:1 is Thursday; Priya's 1:1 was cancelled, awaiting reschedule").
+- Each DR's latest_meeting_note holds what was discussed in their most recent 1:1. Use it for continuity in talking_points: follow up on the commitments or blockers raised there, and don't re-raise something already resolved.
 - Use objective short_title if present; otherwise the full title.
 - ONE entry per DR in talking_points. Never include the same DR more than once — consolidate their points under a single entry.`
 
@@ -127,11 +130,24 @@ function newAdmin() {
   )
 }
 
-// The briefing needs a service-role key (to read across all reports) and an AI
-// gateway key (to generate). If either is missing the feature just stays
-// dormant instead of erroring; the dashboard works fine without it.
-function briefingConfigured() {
-  return !!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.AI_GATEWAY_API_KEY
+// Cache reads run under the caller's session, so row-level security applies and
+// a stored briefing is viewable by any CEO/admin without the service-role key.
+async function sessionClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  )
+}
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+
+// Generating needs the service-role key (to read across reports) and an AI
+// gateway key. It's also off on the public demo so a visitor can't run up the
+// AI bill; the demo just serves the pre-generated briefing.
+function canGenerate() {
+  return !DEMO_MODE && !!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.AI_GATEWAY_API_KEY
 }
 
 async function gateRequest(request) {
@@ -163,7 +179,10 @@ export const maxDuration = 60 // seconds (Vercel Fluid Compute)
 export async function POST(request) {
   const gate = await gateRequest(request)
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
-  if (!briefingConfigured()) {
+  if (DEMO_MODE) {
+    return NextResponse.json({ error: 'Briefing generation is disabled in the demo.' }, { status: 403 })
+  }
+  if (!canGenerate()) {
     return NextResponse.json({ error: 'Weekly briefing is not configured in this environment.' }, { status: 503 })
   }
 
@@ -389,15 +408,12 @@ export async function POST(request) {
 export async function GET(request) {
   const gate = await gateRequest(request)
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
-  if (!briefingConfigured()) {
-    return NextResponse.json({ unconfigured: true })
-  }
 
   const { searchParams } = new URL(request.url)
-  const admin = newAdmin()
+  const db = await sessionClient()
 
   if (searchParams.get('history') === '1') {
-    const { data, error } = await admin
+    const { data, error } = await db
       .from('ai_briefings')
       .select('week_start, generated_at, model, cost_cents, input_tokens, output_tokens, cached_tokens, latency_ms')
       .order('week_start', { ascending: false })
@@ -411,13 +427,18 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Missing week_start' }, { status: 400 })
   }
 
-  const { data, error } = await admin
+  const { data, error } = await db
     .from('ai_briefings')
     .select('*')
     .eq('week_start', week_start)
     .maybeSingle()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!data) {
+    // No stored briefing. Offer generation if it's available, otherwise report
+    // the feature as dormant so the card shows a quiet note rather than an error.
+    if (canGenerate()) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ unconfigured: true })
+  }
 
   return NextResponse.json({
     content: data.content,
