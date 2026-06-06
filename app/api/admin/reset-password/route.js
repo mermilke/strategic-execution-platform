@@ -5,9 +5,8 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
-    const { userId, email, action } = await request.json()
-    // action: 'generate_link' | 'set_password'
-    // For set_password, also expects { password }
+    const { email, action } = await request.json()
+    // action: 'generate_link' -- returns a recovery link the admin can share
 
     // make sure the caller is an admin, via the SSR client
     const cookieStore = cookies()
@@ -22,11 +21,11 @@ export async function POST(request) {
         },
       }
     )
-    const { data: { session } } = await supabaseSSR.auth.getSession()
-    if (!session) {
+    const { data: { user } } = await supabaseSSR.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    const { data: profile } = await supabaseSSR.from('users').select('role').eq('id', session.user.id).single()
+    const { data: profile } = await supabaseSSR.from('users').select('role').eq('id', user.id).single()
     if (!profile || (profile.role !== 'ceo' && profile.role !== 'admin')) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
@@ -66,12 +65,7 @@ export async function POST(request) {
       })
     }
 
-    if (action === 'set_password') {
-      const { password } = await request.json().catch(() => ({}))
-      // Actually we already parsed the body above, so get password from the original parse
-    }
-
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 
   } catch (err) {
     console.error('Admin reset-password error:', err)

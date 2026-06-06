@@ -84,6 +84,9 @@ CREATE POLICY "objectives_insert_admin" ON strategic_objectives FOR INSERT WITH 
 CREATE POLICY "objectives_update_admin" ON strategic_objectives FOR UPDATE USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
 );
+CREATE POLICY "objectives_delete_admin" ON strategic_objectives FOR DELETE USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
+);
 
 -- Sub-objectives: same pattern
 CREATE POLICY "subs_select" ON sub_objectives FOR SELECT USING (
@@ -99,13 +102,28 @@ CREATE POLICY "subs_insert_admin" ON sub_objectives FOR INSERT WITH CHECK (
 CREATE POLICY "subs_update_admin" ON sub_objectives FOR UPDATE USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
 );
+CREATE POLICY "subs_delete_admin" ON sub_objectives FOR DELETE USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
+);
 
--- Check-ins: CEO sees all; direct reports see/edit their own
+-- Check-ins: CEO sees all; direct reports see/edit their own.
+-- Insert must be self-submitted AND against a sub-objective the user owns
+-- (or the user is an admin), so a report can't write onto someone else's goal.
 CREATE POLICY "checkins_select" ON weekly_checkins FOR SELECT USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
   OR submitted_by = auth.uid()
 );
-CREATE POLICY "checkins_insert_own" ON weekly_checkins FOR INSERT WITH CHECK (submitted_by = auth.uid());
+CREATE POLICY "checkins_insert_own" ON weekly_checkins FOR INSERT WITH CHECK (
+  submitted_by = auth.uid()
+  AND (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
+    OR EXISTS (
+      SELECT 1 FROM sub_objectives s
+      JOIN strategic_objectives o ON o.id = s.objective_id
+      WHERE s.id = sub_objective_id AND o.owner_id = auth.uid()
+    )
+  )
+);
 CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE USING (submitted_by = auth.uid());
 
 -- Reminders
@@ -483,3 +501,11 @@ ALTER TABLE ai_briefings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "briefings_select" ON ai_briefings FOR SELECT USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('ceo', 'admin'))
 );
+
+-- Indexes on the foreign keys and hot query paths. Postgres does not index FKs
+-- automatically, and every dashboard load filters on these columns.
+CREATE INDEX IF NOT EXISTS idx_objectives_owner ON strategic_objectives(owner_id);
+CREATE INDEX IF NOT EXISTS idx_sub_objectives_obj ON sub_objectives(objective_id);
+CREATE INDEX IF NOT EXISTS idx_checkins_submitted_by ON weekly_checkins(submitted_by);
+CREATE INDEX IF NOT EXISTS idx_meeting_attachments_user_week ON meeting_attachments(user_id, week_start);
+CREATE INDEX IF NOT EXISTS idx_reminder_log_user_sent ON reminder_log(user_id, sent_at);

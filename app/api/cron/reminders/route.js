@@ -29,6 +29,14 @@ function meetingPatternsFor(firstName) {
   ]
 }
 
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 function isTargetHour(timezone, targetHour) {
   // Only fire when the DR's local hour is exactly the target. Multiple UTC cron
   // firings (one per timezone x DST combo) line up so each DR gets the email at
@@ -602,16 +610,21 @@ export async function GET(request) {
       })
 
       let emailSubject, emailHtml
+      // Escape anything that lands in the HTML body. firstName and the meeting
+      // subject come from user data and the calendar, so a stray "<" shouldn't
+      // break the layout.
+      const safeName = escapeHtml(firstName)
+      const safeSubject = escapeHtml(targetMeeting.subject || '')
       if (emailType === 'reminder') {
         emailSubject = `Reminder: Please complete your check-in before your 1:1 with ${CEO_NAME}`
-        emailHtml = buildReminderEmail(firstName, targetMeeting.subject, dateStr, timeStr, siteUrl)
+        emailHtml = buildReminderEmail(safeName, safeSubject, dateStr, timeStr, siteUrl)
       } else if (emailType === 'overdue') {
         emailSubject = `Overdue: Your check-in for this week's 1:1 with ${CEO_NAME}`
-        emailHtml = buildOverdueEmail(firstName, targetMeeting.subject, dateStr, timeStr, siteUrl)
+        emailHtml = buildOverdueEmail(safeName, safeSubject, dateStr, timeStr, siteUrl)
       } else {
         // cancelled / moved meeting, ask them to fill it out anyway
         emailSubject = `Reminder: Please update your check-in for ${CEO_NAME} this week`
-        emailHtml = buildCancelledEmail(firstName, siteUrl)
+        emailHtml = buildCancelledEmail(safeName, siteUrl)
       }
 
       try {

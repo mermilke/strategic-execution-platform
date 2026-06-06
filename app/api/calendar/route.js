@@ -76,10 +76,15 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
-  const date = searchParams.get('date') // optional: specific date to query
-  const search = searchParams.get('search') // optional: filter by subject containing this text
-  const days = parseInt(searchParams.get('days') || '0') // optional: look ahead N days (0 = just today)
-  const limit = parseInt(searchParams.get('limit') || '20') // optional: max events to return
+  const date = searchParams.get('date')      // a specific date to query
+  const search = searchParams.get('search')  // filter by subject substring
+  // Clamp the numeric params so a caller can't ask for a huge window or page.
+  const clampInt = (raw, fallback, min, max) => {
+    const n = parseInt(raw ?? '', 10)
+    return Math.min(Math.max(Number.isNaN(n) ? fallback : n, min), max)
+  }
+  const days = clampInt(searchParams.get('days'), 0, 0, 60)    // days to look ahead
+  const limit = clampInt(searchParams.get('limit'), 20, 1, 100) // max events
 
   if (!userId) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
