@@ -98,10 +98,6 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function saveEditObj() {
-    // saving happens per-objective inside DraggableObjList
-  }
-
   async function archiveObj(id) {
     await supabase.from('strategic_objectives').update({ is_active: false }).eq('id', id)
     setEditingObjs(prev => { const n = { ...prev }; delete n[id]; return n })
