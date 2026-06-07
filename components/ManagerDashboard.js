@@ -11,6 +11,8 @@ import { startOfWeek, format } from 'date-fns'
 import AnalyticsCharts from './AnalyticsCharts'
 import WeeklyBriefing from './WeeklyBriefing'
 import SnapshotTiles from './dashboard/SnapshotTiles'
+import WeekFilterBar from './dashboard/WeekFilterBar'
+import SummaryCards from './dashboard/SummaryCards'
 
 export default function ManagerDashboard({ currentUser }) {
   const router = useRouter()
@@ -144,6 +146,7 @@ export default function ManagerDashboard({ currentUser }) {
   const totalAtRisk = data.reduce((sum, u) => sum + u.atRisk, 0)
   const totalNeedsSupport = data.reduce((sum, u) => sum + u.needsSupport, 0)
   const totalNotSubmitted = data.filter(u => u.submitted < u.totalSubs).length
+  const staleCount = data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives)).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length
 
   if (loading) return <Spinner />
 
@@ -171,78 +174,16 @@ export default function ManagerDashboard({ currentUser }) {
         setExpandedUsers={setExpandedUsers} setHighlightedSub={setHighlightedSub} />
 
       {/* Week selector + filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-8">
-        <div className="flex items-center gap-2">
-          <label className="text-xs" style={{ color: 'var(--text-muted)' }}>Week:</label>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <select
-              value={selectedWeek}
-              onChange={e => setSelectedWeek(e.target.value)}
-              className="text-sm px-3 py-2 rounded-lg"
-              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-primary)', paddingRight: 36, appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', cursor: 'pointer' }}
-            >
-              {weekOptions.map(w => (
-                <option key={w} value={w}>{formatWeekLabel(w)}{w === thisWeek ? ' (current)' : ''}</option>
-              ))}
-            </select>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}>
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-          <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            <button onClick={goBack} disabled={weekIdx <= 0} title='Previous week'
-              style={{ width: 30, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--bg-surface)', border: 'none', borderRight: '1px solid var(--border)',
-                color: weekIdx <= 0 ? 'var(--text-muted)' : 'var(--text-primary)',
-                cursor: weekIdx <= 0 ? 'not-allowed' : 'pointer', opacity: weekIdx <= 0 ? 0.4 : 1 }}>
-              <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='15 18 9 12 15 6'/></svg>
-            </button>
-            <button onClick={goForward} disabled={weekIdx >= weekOptions.length - 1} title='Next week'
-              style={{ width: 30, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--bg-surface)', border: 'none',
-                color: weekIdx >= weekOptions.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
-                cursor: weekIdx >= weekOptions.length - 1 ? 'not-allowed' : 'pointer', opacity: weekIdx >= weekOptions.length - 1 ? 0.4 : 1 }}>
-              <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='9 18 15 12 9 6'/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto">
-          {[
-            ['all', 'All'],
-            ['not_submitted', `Missing (${totalNotSubmitted})`],
-            ['at_risk', `At Risk (${totalAtRisk})`],
-            ['needs_support', `Needs Support (${totalNeedsSupport})`],
-            ['stale', `No Update (${data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives)).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length})`],
-          ].map(([val, label]) => (
-            <button key={val} onClick={() => applyFilter(val)}
-              className="text-xs px-3 py-1.5 rounded-lg transition-all"
-              style={{
-                background: filterStatus === val ? 'rgba(37, 99, 235,0.15)' : 'var(--bg-surface)',
-                color: filterStatus === val ? '#2563EB' : 'var(--text-muted)',
-                border: `1px solid ${filterStatus === val ? 'rgba(37, 99, 235,0.3)' : 'var(--border)'}`,
-                cursor: 'pointer',
-              }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <WeekFilterBar
+        selectedWeek={selectedWeek} setSelectedWeek={setSelectedWeek} weekOptions={weekOptions}
+        thisWeek={thisWeek} weekIdx={weekIdx} goBack={goBack} goForward={goForward}
+        filterStatus={filterStatus} applyFilter={applyFilter}
+        totalNotSubmitted={totalNotSubmitted} totalAtRisk={totalAtRisk}
+        totalNeedsSupport={totalNeedsSupport} staleCount={staleCount} />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'At Risk Items', value: totalAtRisk, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
-          { label: 'Needs Manager Support', value: totalNeedsSupport, color: '#38BDF8', bg: 'rgba(56,189,248,0.08)' },
-          { label: 'Missing Submissions', value: totalNotSubmitted, color: '#F87171', bg: 'rgba(248,113,113,0.08)' },
-          { label: 'No Update (2+ weeks)', value: data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives)).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length, color: '#D62027', bg: 'rgba(214,32,39,0.08)' },
-        ].map(card => (
-          <div key={card.label} className="rounded-xl p-5" style={{ background: card.bg, border: `1px solid ${card.color}20` }}>
-            <div className="text-3xl font-semibold mb-1" style={{ color: card.color }}>{card.value}</div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{card.label}</div>
-          </div>
-        ))}
-      </div>
+      <SummaryCards totalAtRisk={totalAtRisk} totalNeedsSupport={totalNeedsSupport}
+        totalNotSubmitted={totalNotSubmitted} staleCount={staleCount} />
 
       {/* Direct report cards */}
       <div className="space-y-3">
