@@ -169,7 +169,7 @@ export default function DirectReportDashboard({ currentUser }) {
         </div>
       </div>
 
-      {/* objectives, CEO dashboard style */}
+      {/* objectives, same card style as the leader view */}
       <div className="space-y-6">
         {objectives.map((obj, objIdx) => (
           <div key={obj.id}>

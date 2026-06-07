@@ -112,7 +112,7 @@ open your browser to **http://localhost:3000** and your app is running.
 3. Click the `role` cell and change it from `direct_report` to `admin`
 4. Click Save
 
-Refresh your browser and you'll see the CEO Dashboard and Manage Team menu.
+Refresh your browser and you'll see the leader dashboard and Manage Team menu.
 
 ### Step 10: Invite your direct reports
 1. In Supabase > **Authentication** > **Users** > **Invite user**
@@ -176,7 +176,7 @@ git push -u origin main
 
 **Your CEO:**
 - Log them in with the `ceo` role
-- They get the same CEO dashboard view
+- They get the same leader dashboard view
 
 ---
 

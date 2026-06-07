@@ -38,7 +38,7 @@ function calcWeeksNoProgress(sub, weekOptions, selectedWeek) {
 const STATUS_PROGRESS = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
 const STATUS_BAR_COLOR = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
 
-export default function CEODashboard({ currentUser }) {
+export default function LeaderDashboard({ currentUser }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeView = searchParams.get('view') || 'overview'

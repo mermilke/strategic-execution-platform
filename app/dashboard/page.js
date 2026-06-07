@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
-import CEODashboard from '../../components/CEODashboard'
+import LeaderDashboard from '../../components/LeaderDashboard'
 import DirectReportDashboard from '../../components/DirectReportDashboard'
 
 function DashboardContent() {
@@ -92,7 +92,7 @@ function DashboardContent() {
         {isViewingAs
           ? <DirectReportDashboard currentUser={viewAsProfile} />
           : isCEO
-            ? <CEODashboard currentUser={profile} />
+            ? <LeaderDashboard currentUser={profile} />
             : <DirectReportDashboard currentUser={profile} />
         }
       </main>

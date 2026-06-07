@@ -17,9 +17,9 @@ It's source-available, not open source. See [License](#license).
 
 ## Screenshots
 
-The CEO's team overview, with every report's objectives at a glance:
+The leader's team overview, with every report's objectives at a glance:
 
-![CEO dashboard](docs/screenshots/dashboard.png)
+![Leader dashboard](docs/screenshots/dashboard.png)
 
 | Weekly check-in | A direct report's dashboard |
 | --- | --- |
