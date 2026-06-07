@@ -22,7 +22,6 @@ export default function AdminPage() {
 
   const [newObj, setNewObj] = useState({ title: '', userId: '', date: '', subs: [''] })
   const [editingObjs, setEditingObjs] = useState({})
-  const [editingSub, setEditingSub] = useState(null)
   const [pendingEmail, setPendingEmail] = useState('')
   const [pendingName, setPendingName] = useState('')
   const [pendingUsers, setPendingUsers] = useState([])
@@ -134,18 +133,8 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function saveEditSub() {
-    if (!editingSub) return
-    const { error } = await supabase.from('sub_objectives').update({ title: editingSub.title, short_title: editingSub.short_title || null }).eq('id', editingSub.id)
-    if (error) { console.error('Sub save error:', error); alert('Error saving: ' + error.message); return }
-    setEditingSub(null)
-    showMsg('Sub-objective updated!')
-    await loadData()
-  }
-
   async function archiveSub(id) {
     await supabase.from('sub_objectives').update({ is_active: false }).eq('id', id)
-    setEditingSub(null)
     showMsg('Sub-objective archived')
     await loadData()
   }
@@ -160,7 +149,6 @@ export default function AdminPage() {
     if (!confirm('Permanently delete this sub-objective and all its check-in history?')) return
     const { error } = await supabase.from('sub_objectives').delete().eq('id', id)
     if (error) { showMsg('Delete failed: ' + error.message, 'error'); return }
-    setEditingSub(null)
     showMsg('Sub-objective permanently deleted')
     await loadData()
   }
@@ -442,9 +430,6 @@ export default function AdminPage() {
                         userId={u.id}
                         editingObjs={editingObjs}
                         setEditingObjs={setEditingObjs}
-                        editingSub={editingSub}
-                        setEditingSub={setEditingSub}
-                        saveEditSub={saveEditSub}
                         archiveObj={archiveObj}
                         deleteObj={deleteObj}
                         archiveSub={archiveSub}

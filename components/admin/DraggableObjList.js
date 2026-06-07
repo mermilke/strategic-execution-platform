@@ -11,7 +11,7 @@ import { toLetter, fmtDate } from '../../lib/utils'
 // Drag-reorderable list of a person's active strategic objectives. Each card flips
 // into an Edit mode that lets the manager rename the objective and all of its
 // sub-objectives at once, archive/delete either, and add new sub-objectives.
-export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, editingSub, setEditingSub, saveEditSub, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave }) {
+export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave }) {
   const dragItem = useRef(null)
   const dragOverItem = useRef(null)
   const [editingSubsForObj, setEditingSubsForObj] = useState({}) // { [objId]: { [subId]: title } }
