@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import Spinner from './Spinner'
@@ -7,7 +8,13 @@ import HistoryModal from './HistoryModal'
 import { getCurrentWeekStart, formatWeekLabel } from '../lib/utils'
 import { calcWeeksNoProgress } from '../lib/dashboard'
 import { startOfWeek, format } from 'date-fns'
-import AnalyticsCharts from './AnalyticsCharts'
+
+// recharts is heavy and only used on the analytics view, so load it on demand
+// to keep it out of the initial dashboard bundle.
+const AnalyticsCharts = dynamic(() => import('./AnalyticsCharts'), {
+  ssr: false,
+  loading: () => <Spinner />,
+})
 import WeeklyBriefing from './WeeklyBriefing'
 import SnapshotTiles from './dashboard/SnapshotTiles'
 import WeekFilterBar from './dashboard/WeekFilterBar'
