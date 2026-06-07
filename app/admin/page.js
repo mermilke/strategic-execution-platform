@@ -7,6 +7,7 @@ import IBtn from '../../components/admin/IBtn'
 import AddSubInline from '../../components/admin/AddSubInline'
 import AddObjInline from '../../components/admin/AddObjInline'
 import ArchivedSubsToggle from '../../components/admin/ArchivedSubsToggle'
+import DraggableSubList from '../../components/admin/DraggableSubList'
 import { toLetter, fmtDate } from '../../lib/utils'
 
 export default function AdminPage() {
@@ -889,12 +890,8 @@ function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, editingSu
                 <DraggableSubList
                   subs={activeSubs}
                   objId={obj.id}
-                  editingSub={editingSub}
-                  setEditingSub={setEditingSub}
-                  saveEditSub={saveEditSub}
-                  archiveSub={archiveSub}
-                  deleteSub={deleteSub}
-                  reorderSub={reorderSub}
+                  reorder={reorderSub}
+                  showMeta
                 />
               )}
 
@@ -910,51 +907,6 @@ function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, editingSu
     </div>
   )
 }
-
-// subs are edited via the parent objective's Edit mode, no per-sub edit buttons here
-function DraggableSubList({ subs, objId, editingSub, setEditingSub, saveEditSub, archiveSub, deleteSub, reorderSub }) {
-  const dragItem = useRef(null)
-  const dragOverItem = useRef(null)
-
-  function handleDragStart(e, index) { e.stopPropagation(); dragItem.current = index }
-  function handleDragEnter(index) { dragOverItem.current = index }
-  async function handleDragEnd(e, subId) {
-    e.stopPropagation()
-    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
-    await reorderSub(objId, subId, dragOverItem.current, dragItem.current)
-    dragItem.current = null; dragOverItem.current = null
-  }
-
-  return (
-    <>
-      {subs.map((sub, subIdx) => {
-        return (
-          <div key={sub.id}
-            draggable
-            onDragStart={e => handleDragStart(e, subIdx)}
-            onDragEnter={() => handleDragEnter(subIdx)}
-            onDragEnd={e => handleDragEnd(e, sub.id)}
-            onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg"
-            style={{ background: 'var(--bg-elevated)', cursor: 'grab' }}>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5, padding: '2px 4px', cursor: 'grab', opacity: 0.35, flexShrink: 0 }}>
-              {[0,1,2].map(i => <div key={i} style={{ width: 12, height: 1.5, background: 'var(--text-muted)', borderRadius: 1 }} />)}
-            </div>
-
-            <span className="flex-shrink-0" style={{ fontSize: 13 }}>📌</span>
-            <span className="flex-1 text-xs text-slate-600">
-              {toLetter(subIdx)}. {sub.title}
-              {sub.short_title && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>({sub.short_title})</span>}
-            </span>
-              {sub.created_at && <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.5 }} title={"Created " + fmtDate(sub.created_at)}>Created: {fmtDate(sub.created_at)}</span>}
-          </div>
-        )
-      })}
-    </>
-  )
-}
-
 
 function DraggablePendingObjList({ objs, email, deletePendingObj, deletePendingSub, addSubToPendingObj, reorderPendingObj, reorderPendingSub, onSave }) {
   const dragItem = useRef(null)
@@ -1077,10 +1029,10 @@ function DraggablePendingObjList({ objs, email, deletePendingObj, deletePendingS
                   <AddSubInline objId={obj.id} onAdd={(_, title) => addSubToPendingObj(obj.id, title)} nextLetter={toLetter(subs.length)} />
                 </>
               ) : (
-                <DraggablePendingSubList
+                <DraggableSubList
                   subs={subs}
                   objId={obj.id}
-                  reorderPendingSub={reorderPendingSub}
+                  reorder={reorderPendingSub}
                 />
               )}
               {!isEditing && <AddSubInline objId={obj.id} onAdd={(_, title) => addSubToPendingObj(obj.id, title)} nextLetter={toLetter(subs.length)} />}
@@ -1089,41 +1041,6 @@ function DraggablePendingObjList({ objs, email, deletePendingObj, deletePendingS
         )
       })}
     </div>
-  )
-}
-
-function DraggablePendingSubList({ subs, objId, reorderPendingSub }) {
-  const dragItem = useRef(null)
-  const dragOverItem = useRef(null)
-
-  function handleDragStart(e, index) { e.stopPropagation(); dragItem.current = index }
-  function handleDragEnter(index) { dragOverItem.current = index }
-  async function handleDragEnd(e, subId) {
-    e.stopPropagation()
-    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
-    await reorderPendingSub(objId, subId, dragOverItem.current, dragItem.current)
-    dragItem.current = null; dragOverItem.current = null
-  }
-
-  return (
-    <>
-      {subs.map((sub, subIdx) => (
-        <div key={sub.id}
-          draggable
-          onDragStart={e => handleDragStart(e, subIdx)}
-          onDragEnter={() => handleDragEnter(subIdx)}
-          onDragEnd={e => handleDragEnd(e, sub.id)}
-          onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg"
-          style={{ background: 'var(--bg-elevated)', cursor: 'grab' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5, padding: '2px 4px', cursor: 'grab', opacity: 0.35, flexShrink: 0 }}>
-            {[0,1,2].map(i => <div key={i} style={{ width: 12, height: 1.5, background: 'var(--text-muted)', borderRadius: 1 }} />)}
-          </div>
-          <span className="flex-shrink-0" style={{ fontSize: 13 }}>📌</span>
-          <span className="flex-1 text-xs text-slate-600">{toLetter(subIdx)}. {sub.title}</span>
-        </div>
-      ))}
-    </>
   )
 }
 
