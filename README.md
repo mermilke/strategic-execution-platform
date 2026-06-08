@@ -97,6 +97,7 @@ Automation:
 
 ## Tech
 
+- TypeScript across the app, type-checked in CI
 - Next.js 14 (App Router) and React 18
 - Supabase for Postgres, auth, row-level security, Realtime, and storage
 - The Vercel AI SDK over the Vercel AI Gateway, using Claude Sonnet for the
@@ -225,8 +226,15 @@ plus the dashboard and admin React components (jsdom + Testing Library):
 npm test
 ```
 
-GitHub Actions runs the tests and a production build on every push and pull
-request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+A separate suite of row-level-security integration tests runs against a local
+Supabase Postgres, exercising the RLS policies as real signed-in users:
+
+```bash
+npm run test:integration   # needs Docker + `npx supabase start`
+```
+
+GitHub Actions type-checks, runs the unit tests, and does a production build on
+every push and pull request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Deploying
 
@@ -252,14 +260,11 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 
 Things I'm aware of and would improve given time:
 
-- **The codebase is plain JavaScript, not TypeScript.** Data shapes are
-  validated where they cross a boundary (Zod on the AI path), but not statically
-  across the app. TypeScript would catch a class of errors at build time now that
-  the shapes are stable.
-- **Test coverage is partial.** Vitest covers the date and status logic and the
-  dashboard and admin components; the API route handlers and the SQL row-level
-  security policies are still verified by hand. Integration tests around the
-  routes and RLS would make refactors safer.
+- **Route-level test coverage is partial.** Vitest covers the date and status
+  logic and the dashboard and admin components, and a suite of integration tests
+  exercises the row-level-security policies against a local Postgres. The API
+  route handlers themselves are still verified by hand; integration tests around
+  them would make refactors safer.
 - **The 1:1 calendar match is heuristic.** Reminders identify each report's 1:1
   by matching calendar event titles against common name patterns, so an unusually
   titled meeting can be missed. Matching on a stable calendar category or the
