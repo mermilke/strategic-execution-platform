@@ -1,12 +1,20 @@
 'use client'
 import { format } from 'date-fns'
+import type { Dispatch, SetStateAction } from 'react'
 import { STATUS_HEX, STATUS_LABELS } from '../lib/utils'
+import type { DashCheckin, HistoryModalState } from './dashboard/types'
 
-const toLetter = i => String.fromCharCode(65 + i)
+const toLetter = (i: number) => String.fromCharCode(65 + i)
 
 // Week-by-week history for a single sub-objective, or every sub under an
 // objective. `modal` is { type, title, userName, subs }.
-export default function HistoryModal({ modal, onClose, weekOptions, expandedSubs, setExpandedSubs }) {
+export default function HistoryModal({ modal, onClose, weekOptions, expandedSubs, setExpandedSubs }: {
+  modal: HistoryModalState
+  onClose: () => void
+  weekOptions: string[]
+  expandedSubs: Set<string>
+  setExpandedSubs: Dispatch<SetStateAction<Set<string>>>
+}) {
   return (
     <div
       role="dialog"
@@ -50,7 +58,7 @@ export default function HistoryModal({ modal, onClose, weekOptions, expandedSubs
           {modal.subs.map((sub, si) => {
             const isObjectiveView = modal.type === 'objective' && modal.subs.length > 1
             const isExpanded = !isObjectiveView || expandedSubs.has(sub.id)
-            const latestCheckin = isObjectiveView ? [...weekOptions].reverse().reduce((found, w) => found || sub.weekly_checkins?.find(ch => ch.week_start === w), null) : null
+            const latestCheckin = isObjectiveView ? [...weekOptions].reverse().reduce<DashCheckin | null>((found, w) => found || sub.weekly_checkins?.find(ch => ch.week_start === w) || null, null) : null
             const latestStatus = latestCheckin?.status
             const latestColor = latestStatus ? STATUS_HEX[latestStatus] : '#94A3B8'
 
@@ -98,8 +106,8 @@ export default function HistoryModal({ modal, onClose, weekOptions, expandedSubs
                           </div>
                         )
                       }
-                      const statusColor = STATUS_HEX[c.status] || '#94A3B8'
-                      const statusLabel = STATUS_LABELS[c.status] || c.status
+                      const statusColor = STATUS_HEX[c.status ?? ''] || '#94A3B8'
+                      const statusLabel = STATUS_LABELS[c.status ?? ''] || c.status
                       return (
                         <div key={week} style={{ padding: '12px 14px', borderRadius: 10, background: `${statusColor}10`, border: `1px solid ${statusColor}30` }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: (c.comments || c.progress_this_week) ? 8 : 0 }}>

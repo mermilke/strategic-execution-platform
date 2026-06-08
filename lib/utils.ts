@@ -80,8 +80,8 @@ const STATUS_TINT: Record<string, StatusTint> = {
   on_track:    { bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.25)', text: '#34D399' },
 }
 
-export function statusTint(status: string): StatusTint {
-  return STATUS_TINT[status] || { bg: 'var(--bg-base)', border: 'var(--border)', text: '#64748B' }
+export function statusTint(status: string | null | undefined): StatusTint {
+  return STATUS_TINT[status ?? ''] || { bg: 'var(--bg-base)', border: 'var(--border)', text: '#64748B' }
 }
 
 // Index -> letter label (0 -> "A"). Labels sub-objective rows in the admin UI.

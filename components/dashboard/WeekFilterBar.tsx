@@ -1,10 +1,25 @@
 'use client'
+import type { Dispatch, SetStateAction } from 'react'
 import { formatWeekLabel } from '../../lib/utils'
 
 // Week picker (dropdown + prev/next arrows) on the left, status filter chips on the right.
 export default function WeekFilterBar({
   selectedWeek, setSelectedWeek, weekOptions, thisWeek, weekIdx, goBack, goForward,
   filterStatus, applyFilter, totalNotSubmitted, totalAtRisk, totalNeedsSupport, staleCount,
+}: {
+  selectedWeek: string
+  setSelectedWeek: Dispatch<SetStateAction<string>>
+  weekOptions: string[]
+  thisWeek: string
+  weekIdx: number
+  goBack: () => void
+  goForward: () => void
+  filterStatus: string
+  applyFilter: (val: string) => void
+  totalNotSubmitted: number
+  totalAtRisk: number
+  totalNeedsSupport: number
+  staleCount: number
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 mb-8">

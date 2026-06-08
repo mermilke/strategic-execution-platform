@@ -1,11 +1,19 @@
 'use client'
+import type { Dispatch, SetStateAction } from 'react'
 import { calcWeeksNoProgress, STATUS_PROGRESS, STATUS_BAR_COLOR } from '../../lib/dashboard'
 import { toLetter } from '../../lib/utils'
+import type { DashUser } from './types'
 
 // The compact per-report grid at the top of the overview: one tile per direct report,
 // each showing a colored progress bar per sub-objective. Clicking a name or bar expands
 // that report's full card below and scrolls to it.
-export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpandedUsers, setHighlightedSub }) {
+export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpandedUsers, setHighlightedSub }: {
+  data: DashUser[]
+  weekOptions: string[]
+  selectedWeek: string
+  setExpandedUsers: Dispatch<SetStateAction<Set<string>>>
+  setHighlightedSub: Dispatch<SetStateAction<string | null>>
+}) {
   return (
     <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
       {data.map(u => {

@@ -20,21 +20,24 @@ import SnapshotTiles from './dashboard/SnapshotTiles'
 import WeekFilterBar from './dashboard/WeekFilterBar'
 import SummaryCards from './dashboard/SummaryCards'
 import DirectReportCard from './dashboard/DirectReportCard'
+import type { DashUser, HistoryModalState } from './dashboard/types'
 
-export default function ManagerDashboard({ currentUser }) {
+export default function ManagerDashboard({ currentUser }: {
+  currentUser: { id: string; full_name?: string | null; email?: string | null; role?: string | null }
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeView = searchParams.get('view') || 'overview'
-  const [data, setData] = useState([])
+  const [data, setData] = useState<DashUser[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekStart())
-  const [expandedUsers, setExpandedUsers] = useState(new Set())
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [filterStatus, setFilterStatus] = useState('all')
-  const [historyModal, setHistoryModal] = useState(null)
-  const [expandedModalSubs, setExpandedModalSubs] = useState(new Set())
-  const [highlightedSub, setHighlightedSub] = useState(null)
+  const [historyModal, setHistoryModal] = useState<HistoryModalState | null>(null)
+  const [expandedModalSubs, setExpandedModalSubs] = useState<Set<string>>(new Set())
+  const [highlightedSub, setHighlightedSub] = useState<string | null>(null)
 
-  function applyFilter(val) {
+  function applyFilter(val: string) {
     setFilterStatus(val)
     if (val !== 'all') {
       // expand everyone matching the filter
@@ -54,10 +57,10 @@ export default function ManagerDashboard({ currentUser }) {
   // earliest week comes from the check-in data so the range covers all real
   // history. Memoized so it only recomputes when the data changes.
   const weekOptions = useMemo(() => {
-    const weeks = []
+    const weeks: string[] = []
     const cur = startOfWeek(new Date(), { weekStartsOn: 1 })
 
-    let earliest = null
+    let earliest: string | null = null
     for (const u of data) {
       for (const o of (u.objectives || [])) {
         for (const s of (o.sub_objectives || [])) {
@@ -126,7 +129,7 @@ export default function ManagerDashboard({ currentUser }) {
       }))
 
 
-      const allCheckins = objWithCheckins.flatMap(o => o.sub_objectives.map(s => s.thisWeekCheckin)).filter(Boolean)
+      const allCheckins = objWithCheckins.flatMap(o => o.sub_objectives.map(s => s.thisWeekCheckin)).filter((c): c is NonNullable<typeof c> => !!c)
       const totalSubs = objWithCheckins.flatMap(o => o.sub_objectives).length
       const submitted = allCheckins.length
       const atRisk = allCheckins.filter(c => c.status === 'at_risk').length
@@ -138,7 +141,7 @@ export default function ManagerDashboard({ currentUser }) {
       return { ...u, objectives: objWithCheckins, totalSubs, submitted, atRisk, offTrack, onHold, notStarted, needsSupport }
     }))
 
-    setData(enriched)
+    setData(enriched as unknown as DashUser[])
     setLoading(false)
   }
 

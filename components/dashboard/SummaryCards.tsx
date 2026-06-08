@@ -1,7 +1,12 @@
 'use client'
 
 // The four headline stat cards shown under the week/filter bar.
-export default function SummaryCards({ totalAtRisk, totalNeedsSupport, totalNotSubmitted, staleCount }) {
+export default function SummaryCards({ totalAtRisk, totalNeedsSupport, totalNotSubmitted, staleCount }: {
+  totalAtRisk: number
+  totalNeedsSupport: number
+  totalNotSubmitted: number
+  staleCount: number
+}) {
   return (
     <div className="grid grid-cols-4 gap-4 mb-8">
       {[

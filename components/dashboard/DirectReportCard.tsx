@@ -1,7 +1,9 @@
 'use client'
+import type { Dispatch, SetStateAction } from 'react'
 import StatusBadge from '../StatusBadge'
 import { statusTint, toLetter } from '../../lib/utils'
 import { calcWeeksNoProgress } from '../../lib/dashboard'
+import type { DashUser, HistoryModalState } from './types'
 
 // One expandable report row in the overview list: header (name, submission bar, view-as,
 // alert chips) plus, when expanded, the report's objectives, opportunities, and sub-objective
@@ -9,6 +11,17 @@ import { calcWeeksNoProgress } from '../../lib/dashboard'
 export default function DirectReportCard({
   u, expandedUsers, setExpandedUsers, router, filterStatus,
   weekOptions, selectedWeek, highlightedSub, setHistoryModal, setExpandedModalSubs,
+}: {
+  u: DashUser
+  expandedUsers: Set<string>
+  setExpandedUsers: Dispatch<SetStateAction<Set<string>>>
+  router: { push: (href: string) => void }
+  filterStatus: string
+  weekOptions: string[]
+  selectedWeek: string
+  highlightedSub: string | null
+  setHistoryModal: Dispatch<SetStateAction<HistoryModalState | null>>
+  setExpandedModalSubs: Dispatch<SetStateAction<Set<string>>>
 }) {
   return (
     <div id={`user-${u.id}`} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', scrollMarginTop: 80 }}>
@@ -108,8 +121,8 @@ export default function DirectReportCard({
                 <span
                   onClick={() => { setExpandedModalSubs(new Set()); setHistoryModal({ type: 'objective', title: obj.title, userName: u.full_name, subs: obj.sub_objectives }) }}
                   style={{ fontSize: 15, fontWeight: 600, color: '#1E293B', cursor: 'pointer', textDecoration: 'none' }}
-                  onMouseEnter={e => e.target.style.textDecoration = 'underline'}
-                  onMouseLeave={e => e.target.style.textDecoration = 'none'}
+                  onMouseEnter={e => (e.target as HTMLElement).style.textDecoration = 'underline'}
+                  onMouseLeave={e => (e.target as HTMLElement).style.textDecoration = 'none'}
                 >🎯 {objIdx + 1}. {obj.title}</span>
               </div>
               {obj.opportunity_target ? (() => {
