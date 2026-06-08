@@ -1,22 +1,37 @@
 'use client'
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
+import type { ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
-import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG } from '../../lib/utils'
+import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
 import { startOfWeek, format, subWeeks, addWeeks } from 'date-fns'
+
+type MeetSub = {
+  id: string
+  title: string
+  is_active?: boolean | null
+  sort_order?: number | null
+  created_at?: string | null
+  weekly_checkins?: any[] | null
+}
+type MeetObj = {
+  id: string
+  title: string
+  sub_objectives?: MeetSub[] | null
+}
 
 function MeetingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialUserId = searchParams.get('userId')
 
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   // direct reports (manager only)
-  const [directReports, setDirectReports] = useState([])
+  const [directReports, setDirectReports] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState(initialUserId || '')
   const [selectedUserName, setSelectedUserName] = useState('')
 
@@ -24,34 +39,34 @@ function MeetingContent() {
   const [selectedWeek, setSelectedWeek] = useState(currentWeek)
 
   // left panel check-in data
-  const [objectives, setObjectives] = useState([])
-  const [checkins, setCheckins] = useState({})
-  const [lastWeekCheckins, setLastWeekCheckins] = useState({})
-  const [attachments, setAttachments] = useState([])
+  const [objectives, setObjectives] = useState<MeetObj[]>([])
+  const [checkins, setCheckins] = useState<Record<string, any>>({})
+  const [lastWeekCheckins, setLastWeekCheckins] = useState<Record<string, any>>({})
+  const [attachments, setAttachments] = useState<any[]>([])
   const [agendaCollapsed, setAgendaCollapsed] = useState(true)
-  const [smartsheetData, setSmartsheetData] = useState([])
-  const [smartsheetExpanded, setSmartsheetExpanded] = useState({})
-  const [calendarEvents, setCalendarEvents] = useState([])
-  const [calendarConnected, setCalendarConnected] = useState(null) // null=loading, true/false
-  const [nextMeeting, setNextMeeting] = useState(null) // next 1:1 for selected user
+  const [smartsheetData, setSmartsheetData] = useState<any[]>([])
+  const [smartsheetExpanded, setSmartsheetExpanded] = useState<Record<string, boolean>>({})
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null) // null=loading, true/false
+  const [nextMeeting, setNextMeeting] = useState<any>(null) // next 1:1 for selected user
 
   // right panel notes
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState(null)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [otherTyping, setOtherTyping] = useState(false)
   const [otherTypingName, setOtherTypingName] = useState('')
 
-  const saveTimeoutRef = useRef(null)
-  const typingTimeoutRef = useRef(null)
-  const channelRef = useRef(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const channelRef = useRef<any>(null)
   const notesRef = useRef(notes)
   notesRef.current = notes
 
   // build the week dropdown from the user's check-in history (oldest to current)
   const weekOptions = (() => {
-    const opts = []
-    let earliest = null
+    const opts: { value: string; label: string }[] = []
+    let earliest: string | null = null
     for (const obj of (objectives || [])) {
       for (const s of (obj.sub_objectives || [])) {
         for (const c of (s.weekly_checkins || [])) {
@@ -61,7 +76,7 @@ function MeetingContent() {
     }
     const cur = new Date(currentWeek + 'T00:00:00')
     const start = earliest ? new Date(earliest + 'T00:00:00') : cur
-    const list = []
+    const list: string[] = []
     let w = start
     while (w <= cur) {
       list.push(format(w, 'yyyy-MM-dd'))
@@ -104,23 +119,23 @@ function MeetingContent() {
 
         if (initialUserId && (reports || []).find(r => r.id === initialUserId)) {
           setSelectedUserId(initialUserId)
-          const found = reports.find(r => r.id === initialUserId)
+          const found = (reports || []).find(r => r.id === initialUserId)
           setSelectedUserName(found?.full_name || '')
-          const url = new URL(window.location)
+          const url = new URL(window.location.href)
           url.searchParams.set('userId', initialUserId)
           window.history.replaceState({}, '', url)
-        } else if (reports?.length > 0) {
+        } else if (reports && reports.length > 0) {
           setSelectedUserId(reports[0].id)
           setSelectedUserName(reports[0].full_name)
           // keep the default selection in the URL so a refresh stays on them
-          const url = new URL(window.location)
+          const url = new URL(window.location.href)
           url.searchParams.set('userId', reports[0].id)
           window.history.replaceState({}, '', url)
         }
       } else {
         // a DR only ever sees themselves
-        setSelectedUserId(prof.id)
-        setSelectedUserName(prof.full_name)
+        setSelectedUserId(prof?.id ?? '')
+        setSelectedUserName(prof?.full_name ?? '')
       }
 
       setLoading(false)
@@ -140,11 +155,11 @@ function MeetingContent() {
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
 
-      setObjectives(objs || [])
+      setObjectives((objs || []) as unknown as MeetObj[])
 
       // map check-ins for this week and last week
-      const map = {}
-      const lastMap = {}
+      const map: Record<string, any> = {}
+      const lastMap: Record<string, any> = {}
       const lastWeek = format(subWeeks(new Date(selectedWeek + 'T00:00:00'), 1), 'yyyy-MM-dd')
       ;(objs || []).forEach(obj => {
         (obj.sub_objectives || []).forEach(sub => {
@@ -285,7 +300,7 @@ function MeetingContent() {
         if (payload.senderId !== profile.id) {
           setOtherTyping(true)
           setOtherTypingName(payload.senderName || 'Someone')
-          clearTimeout(typingTimeoutRef.current)
+          clearTimeout(typingTimeoutRef.current ?? undefined)
           typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 2000)
         }
       })
@@ -296,13 +311,13 @@ function MeetingContent() {
     return () => {
       supabase.removeChannel(channel)
       channelRef.current = null
-      clearTimeout(saveTimeoutRef.current)
-      clearTimeout(typingTimeoutRef.current)
+      clearTimeout(saveTimeoutRef.current ?? undefined)
+      clearTimeout(typingTimeoutRef.current ?? undefined)
     }
   }, [selectedUserId, selectedWeek, profile])
 
   // debounced save
-  const saveNotes = useCallback(async (value) => {
+  const saveNotes = useCallback(async (value: string) => {
     setSaving(true)
     await supabase
       .from('meeting_notes')
@@ -318,7 +333,7 @@ function MeetingContent() {
     setLastSaved(new Date())
   }, [selectedUserId, selectedWeek, profile])
 
-  function handleNotesChange(e) {
+  function handleNotesChange(e: ChangeEvent<HTMLTextAreaElement>) {
     const value = e.target.value
     setNotes(value)
 
@@ -336,11 +351,11 @@ function MeetingContent() {
       })
     }
 
-    clearTimeout(saveTimeoutRef.current)
+    clearTimeout(saveTimeoutRef.current ?? undefined)
     saveTimeoutRef.current = setTimeout(() => saveNotes(value), 1000)
   }
 
-  function handleUserChange(e) {
+  function handleUserChange(e: ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value
     setSelectedUserId(id)
     const found = directReports.find(r => r.id === id)
@@ -348,12 +363,12 @@ function MeetingContent() {
     setNotes('')
     setLastSaved(null)
     // keep the selection in the URL so a refresh stays on them
-    const url = new URL(window.location)
+    const url = new URL(window.location.href)
     url.searchParams.set('userId', id)
     window.history.replaceState({}, '', url.toString())
   }
 
-  function navigateWeek(dir) {
+  function navigateWeek(dir: 'prev' | 'next') {
     const d = dir === 'prev'
       ? subWeeks(new Date(selectedWeek + 'T00:00:00'), 1)
       : addWeeks(new Date(selectedWeek + 'T00:00:00'), 1)
@@ -371,7 +386,7 @@ function MeetingContent() {
     </div>
   )
 
-  const toLetter = i => String.fromCharCode(65 + i)
+  const toLetter = (i: number) => String.fromCharCode(65 + i)
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
@@ -523,7 +538,7 @@ function MeetingContent() {
                   const sorted = (obj.sub_objectives || [])
                     .filter(s => s.is_active)
                     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.created_at || '').localeCompare(b.created_at || ''))
-                  const letterMap = {}
+                  const letterMap: Record<string, number> = {}
                   sorted.forEach((s, i) => { letterMap[s.id] = i })
                   const withDiscuss = sorted.filter(s => checkins[s.id]?.discuss_in_meeting)
                   const withoutDiscuss = sorted.filter(s => !checkins[s.id]?.discuss_in_meeting)
@@ -533,10 +548,10 @@ function MeetingContent() {
                 const hasAnyDiscuss = allObjData.some(d => d.withDiscuss.length > 0)
                 const hasAnyNonDiscuss = allObjData.some(d => d.withoutDiscuss.length > 0)
 
-                const renderSubCard = (sub, subIdx, c, isDiscuss) => {
-                  const statusCfg = c ? STATUS_CONFIG[c.status] : null
+                const renderSubCard = (sub: MeetSub, subIdx: number, c: any, isDiscuss: boolean) => {
+                  const statusCfg = c ? STATUS_CONFIG[c.status as StatusKey] : null
                   const lc = lastWeekCheckins[sub.id]
-                  const lastCfg = c && lc && lc.status !== c.status ? STATUS_CONFIG[lc.status] : null
+                  const lastCfg = c && lc && lc.status !== c.status ? STATUS_CONFIG[lc.status as StatusKey] : null
                   return (
                     <div key={sub.id} className="rounded-lg p-2.5" style={{
                       background: c ? `${statusCfg?.hex || '#94A3B8'}12` : 'var(--bg-base)',

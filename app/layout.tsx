@@ -1,9 +1,11 @@
 import './globals.css'
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import BugReportButton from '../components/BugReportButton'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Strategic Execution Platform',
   description: 'Weekly goal alignment between a manager and their direct reports',
   icons: {
@@ -27,7 +29,7 @@ export const metadata = {
   },
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>

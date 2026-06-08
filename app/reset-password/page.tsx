@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
+import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
-function getPasswordStrength(pwd) {
-  const checks = {
+function getPasswordStrength(pwd: string) {
+  const checks: Record<string, boolean> = {
     length: pwd.length >= 10,
     upper: /[A-Z]/.test(pwd),
     lower: /[a-z]/.test(pwd),
@@ -94,7 +95,7 @@ export default function ResetPasswordPage() {
     return () => { cancelled = true; subscription.unsubscribe(); clearTimeout(timeout) }
   }, [])
 
-  async function handleReset(e) {
+  async function handleReset(e: FormEvent) {
     e.preventDefault()
     if (strength.passed < 5) { setError('Please meet all password requirements below'); return }
     if (password !== confirm) { setError("Passwords don't match"); return }

@@ -25,7 +25,7 @@ type Objective = {
   created_at?: string | null
   sub_objectives?: SubObjective[] | null
 }
-type EditObjState = Record<string, { title: string; short_title?: string; target_date?: string | null }>
+export type EditObjState = Record<string, { title: string; short_title?: string; target_date?: string | null }>
 type EditSubState = Record<string, Record<string, { title?: string; short_title?: string }>>
 
 // Drag-reorderable list of a person's active strategic objectives. Each card flips

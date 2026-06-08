@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
@@ -17,7 +18,7 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false)
   const [mode, setMode] = useState('password') // 'password' | 'magic' | 'forgot'
   const [cooldown, setCooldown] = useState(0)
-  const cooldownRef = useRef(null)
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // surface error details from auth callback failures or hash fragment errors
   useEffect(() => {
@@ -51,11 +52,11 @@ export default function LoginPage() {
   useEffect(() => {
     if (cooldown > 0) {
       cooldownRef.current = setTimeout(() => setCooldown(c => c - 1), 1000)
-      return () => clearTimeout(cooldownRef.current)
+      return () => clearTimeout(cooldownRef.current ?? undefined)
     }
   }, [cooldown])
 
-  function parseRateLimitError(msg) {
+  function parseRateLimitError(msg: string | null | undefined): number | true | null {
     if (!msg) return null
     const lower = msg.toLowerCase()
     if (lower.includes('rate limit') || lower.includes('too many') || lower.includes('email rate limit') || lower.includes('over_email_send_rate_limit') || lower.includes('security purposes')) {
@@ -67,7 +68,7 @@ export default function LoginPage() {
     return null
   }
 
-  async function handlePasswordLogin(e) {
+  async function handlePasswordLogin(e: FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -75,14 +76,14 @@ export default function LoginPage() {
     else router.push('/dashboard')
   }
 
-  async function quickLogin(demoEmail) {
+  async function quickLogin(demoEmail: string) {
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email: demoEmail, password: 'demo1234' })
     if (error) { setError(error.message); setLoading(false) }
     else router.push('/dashboard')
   }
 
-  async function handleMagicLink(e) {
+  async function handleMagicLink(e: FormEvent) {
     e.preventDefault()
     if (cooldown > 0) return
     setLoading(true); setError('')
@@ -102,7 +103,7 @@ export default function LoginPage() {
     }
   }
 
-  async function handleForgotPassword(e) {
+  async function handleForgotPassword(e: FormEvent) {
     e.preventDefault()
     if (cooldown > 0) return
     setLoading(true); setError('')

@@ -6,28 +6,35 @@ import Navbar from '../../components/Navbar'
 import IBtn from '../../components/admin/IBtn'
 import AddObjInline from '../../components/admin/AddObjInline'
 import DraggableObjList from '../../components/admin/DraggableObjList'
+import type { EditObjState } from '../../components/admin/DraggableObjList'
 import DraggablePendingObjList from '../../components/admin/DraggablePendingObjList'
 import { fmtDate } from '../../lib/utils'
 
+type AdminSub = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null }
+type AdminObj = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null; sub_objectives?: AdminSub[] | null }
+type AdminUser = { id: string; full_name?: string | null; email: string; role?: string | null; strategic_objectives?: AdminObj[] | null }
+type PendingSubObj = { id: string; title: string; sort_order?: number | null }
+type PendingObjective = { id: string; pending_user_email: string; title: string; target_date?: string | null; sort_order?: number | null; created_at?: string | null; pending_sub_objectives?: PendingSubObj[] | null }
+
 export default function AdminPage() {
   const router = useRouter()
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [users, setUsers] = useState([])
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('users')
-  const [expandedUsers, setExpandedUsers] = useState(new Set())
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [showArchived, setShowArchived] = useState(false)
   const [msg, setMsg] = useState({ text: '', type: 'success' })
 
-  const [newObj, setNewObj] = useState({ title: '', userId: '', date: '', subs: [''] })
-  const [editingObjs, setEditingObjs] = useState({})
+  const [newObj, setNewObj] = useState<{ title: string; userId: string; date: string; subs: string[] }>({ title: '', userId: '', date: '', subs: [''] })
+  const [editingObjs, setEditingObjs] = useState<EditObjState>({})
   const [pendingEmail, setPendingEmail] = useState('')
   const [pendingName, setPendingName] = useState('')
-  const [pendingUsers, setPendingUsers] = useState([])
-  const [pendingObjectives, setPendingObjectives] = useState([])
-  const [bugReports, setBugReports] = useState([])
-  const [expandedPending, setExpandedPending] = useState(new Set())
+  const [pendingUsers, setPendingUsers] = useState<any[]>([])
+  const [pendingObjectives, setPendingObjectives] = useState<PendingObjective[]>([])
+  const [bugReports, setBugReports] = useState<any[]>([])
+  const [expandedPending, setExpandedPending] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function load() {
@@ -47,17 +54,17 @@ export default function AdminPage() {
       .from('users')
       .select(`*, strategic_objectives(*, sub_objectives(*))`)
       .order('full_name')
-    setUsers(data || [])
+    setUsers((data || []) as unknown as AdminUser[])
     const { data: pending } = await supabase.from('pending_users').select('*').order('created_at', { ascending: false })
     const emails = (data || []).map(u => u.email.toLowerCase()); setPendingUsers((pending || []).filter(p => !emails.includes(p.email.toLowerCase())))
     const { data: pObjs } = await supabase.from('pending_objectives').select('*, pending_sub_objectives(*)').order('created_at')
-    setPendingObjectives(pObjs || [])
+    setPendingObjectives((pObjs || []) as unknown as PendingObjective[])
     const { data: bugs } = await supabase.from('bug_reports').select('*, users(full_name, email)').order('created_at', { ascending: false })
     setBugReports(bugs || [])
     setLoading(false)
   }
 
-  function showMsg(text, type = 'success') {
+  function showMsg(text: string, type = 'success') {
     setMsg({ text, type })
     setTimeout(() => setMsg({ text: '', type: 'success' }), 3000)
   }
@@ -99,20 +106,20 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function archiveObj(id) {
+  async function archiveObj(id: string) {
     await supabase.from('strategic_objectives').update({ is_active: false }).eq('id', id)
     setEditingObjs(prev => { const n = { ...prev }; delete n[id]; return n })
     showMsg('Objective archived -- find it in the Archived section')
     await loadData()
   }
 
-  async function restoreObj(id) {
+  async function restoreObj(id: string) {
     await supabase.from('strategic_objectives').update({ is_active: true }).eq('id', id)
     showMsg('Objective restored!')
     await loadData()
   }
 
-  async function deleteObj(id) {
+  async function deleteObj(id: string) {
     if (!confirm('Permanently delete this objective, all sub-objectives, and all check-in history? This cannot be undone.')) return
     const { error } = await supabase.from('strategic_objectives').delete().eq('id', id)
     if (error) { showMsg('Delete failed: ' + error.message, 'error'); return }
@@ -121,7 +128,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function reorderObj(userId, objId, newIndex, oldIndex) {
+  async function reorderObj(userId: string, objId: string, newIndex: number, oldIndex: number) {
     const userObjs = users.find(u => u.id === userId)?.strategic_objectives?.filter(o => o.is_active)
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.created_at || '').localeCompare(b.created_at || '')) || []
     const reordered = [...userObjs]
@@ -133,19 +140,19 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function archiveSub(id) {
+  async function archiveSub(id: string) {
     await supabase.from('sub_objectives').update({ is_active: false }).eq('id', id)
     showMsg('Sub-objective archived')
     await loadData()
   }
 
-  async function restoreSub(id) {
+  async function restoreSub(id: string) {
     await supabase.from('sub_objectives').update({ is_active: true }).eq('id', id)
     showMsg('Sub-objective restored!')
     await loadData()
   }
 
-  async function deleteSub(id) {
+  async function deleteSub(id: string) {
     if (!confirm('Permanently delete this sub-objective and all its check-in history?')) return
     const { error } = await supabase.from('sub_objectives').delete().eq('id', id)
     if (error) { showMsg('Delete failed: ' + error.message, 'error'); return }
@@ -153,7 +160,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function reorderSub(objId, subId, newIndex, oldIndex) {
+  async function reorderSub(objId: string, subId: string, newIndex: number, oldIndex: number) {
     const obj = users.flatMap(u => u.strategic_objectives || []).find(o => o.id === objId)
     const subs = (obj?.sub_objectives || []).filter(s => s.is_active).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     const reordered = [...subs]
@@ -165,7 +172,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function addObjForUser(userId, title, date, subs) {
+  async function addObjForUser(userId: string, title: string, date: string, subs: string[]) {
     const { data: existing } = await supabase.from('strategic_objectives').select('sort_order').eq('owner_id', userId).eq('is_active', true).order('sort_order', { ascending: false }).limit(1)
     const nextOrder = (existing?.[0]?.sort_order ?? -1) + 1
     const { data: obj, error } = await supabase.from('strategic_objectives').insert({
@@ -181,7 +188,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function addSubToObj(objId, title) {
+  async function addSubToObj(objId: string, title: string) {
     if (!title.trim()) return
     const { data: existing } = await supabase.from('sub_objectives').select('sort_order').eq('objective_id', objId).order('sort_order', { ascending: false }).limit(1)
     const nextOrder = (existing?.[0]?.sort_order || 0) + 1
@@ -201,7 +208,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function addObjForPendingUser(email, title, date, subs) {
+  async function addObjForPendingUser(email: string, title: string, date: string, subs: string[]) {
     const { data: existing } = await supabase.from('pending_objectives').select('sort_order').eq('pending_user_email', email).order('sort_order', { ascending: false }).limit(1)
     const nextOrder = (existing?.[0]?.sort_order ?? -1) + 1
     const { data: obj, error } = await supabase.from('pending_objectives').insert({
@@ -217,7 +224,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function addSubToPendingObj(objId, title) {
+  async function addSubToPendingObj(objId: string, title: string) {
     if (!title.trim()) return
     const { data: existing } = await supabase.from('pending_sub_objectives').select('sort_order').eq('pending_objective_id', objId).order('sort_order', { ascending: false }).limit(1)
     const nextOrder = (existing?.[0]?.sort_order || 0) + 1
@@ -226,21 +233,21 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function deletePendingObj(id) {
+  async function deletePendingObj(id: string) {
     if (!confirm('Delete this pending objective and all its sub-objectives?')) return
     await supabase.from('pending_objectives').delete().eq('id', id)
     showMsg('Pending objective deleted')
     await loadData()
   }
 
-  async function deletePendingSub(id) {
+  async function deletePendingSub(id: string) {
     if (!confirm('Delete this pending sub-objective?')) return
     await supabase.from('pending_sub_objectives').delete().eq('id', id)
     showMsg('Pending sub-objective deleted')
     await loadData()
   }
 
-  async function deletePendingUser(id, email) {
+  async function deletePendingUser(id: string, email: string) {
     if (!confirm('Remove this pending person and all their pending objectives?')) return
     await supabase.from('pending_objectives').delete().eq('pending_user_email', email)
     await supabase.from('pending_users').delete().eq('id', id)
@@ -248,7 +255,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function reorderPendingObj(email, objId, newIndex, oldIndex) {
+  async function reorderPendingObj(email: string, objId: string, newIndex: number, oldIndex: number) {
     const objs = pendingObjectives.filter(o => o.pending_user_email.toLowerCase() === email.toLowerCase())
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.created_at || '').localeCompare(b.created_at || ''))
     const reordered = [...objs]
@@ -260,7 +267,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function reorderPendingSub(objId, subId, newIndex, oldIndex) {
+  async function reorderPendingSub(objId: string, subId: string, newIndex: number, oldIndex: number) {
     const obj = pendingObjectives.find(o => o.id === objId)
     const subs = (obj?.pending_sub_objectives || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     const reordered = [...subs]
@@ -272,7 +279,7 @@ export default function AdminPage() {
     await loadData()
   }
 
-  async function generateResetLink(userEmail, userName) {
+  async function generateResetLink(userEmail: string, userName: string | null | undefined) {
     showMsg('Generating reset link…', 'info')
     try {
       const res = await fetch('/api/admin/reset-password', {
@@ -293,7 +300,7 @@ export default function AdminPage() {
         prompt(`Reset link for ${userName || userEmail} (copy this):`, data.link)
         showMsg('Reset link generated -- copy it from the dialog above.')
       }
-    } catch (err) {
+    } catch (err: any) {
       showMsg('Network error: ' + err.message, 'error')
     }
   }
@@ -353,7 +360,7 @@ export default function AdminPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
                         style={{ background: 'rgba(37, 99, 235,0.15)', color: '#2563EB', border: '1px dashed rgba(37, 99, 235,0.3)' }}>
-                        {(p.full_name || p.email)?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {(p.full_name || p.email)?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <div className="text-sm font-medium text-slate-700">{p.full_name || p.email} <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ background: 'rgba(37, 99, 235,0.15)', color: '#2563EB', fontSize: 10 }}>Pending</span></div>

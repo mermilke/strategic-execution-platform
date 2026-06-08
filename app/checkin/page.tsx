@@ -1,11 +1,28 @@
 'use client'
 import { useEffect, useState, useRef, Suspense } from 'react'
+import type { ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
-import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG } from '../../lib/utils'
+import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
 
-const toLetter = i => String.fromCharCode(65 + i)
+type CheckinSub = {
+  id: string
+  title: string
+  is_active?: boolean | null
+  is_implicit?: boolean | null
+  sort_order?: number | null
+  created_at?: string | null
+}
+type CheckinObj = {
+  id: string
+  title: string
+  opportunity_target?: number | null
+  sub_objectives?: CheckinSub[] | null
+  objective_opportunities?: any[] | null
+}
+
+const toLetter = (i: number) => String.fromCharCode(65 + i)
 
 function blankOpportunity() {
   return { customer: '', project_description: '', segment: '', estimated_value_text: '', status: 'Completed' }
@@ -13,7 +30,7 @@ function blankOpportunity() {
 
 // parse a free-text value into a number for totals later
 // handles "$500K", "500,000", "~250k/yr", "1.2M", "300000", and friends
-function parseEstimatedValue(text) {
+function parseEstimatedValue(text: string | null | undefined): number | null {
   if (!text) return null
   const cleaned = String(text).replace(/[,\s$]/g, '')
   const m = cleaned.match(/(\d+(?:\.\d+)?)\s*([kKmMbB]?)/)
@@ -33,23 +50,23 @@ function CheckinForm() {
   const focusedSubId = searchParams.get('sub')
   const viewAsId = searchParams.get('viewAs')
 
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [viewAsProfile, setViewAsProfile] = useState(null)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [viewAsProfile, setViewAsProfile] = useState<any>(null)
   const [readOnly, setReadOnly] = useState(false)
-  const [objectives, setObjectives] = useState([])
+  const [objectives, setObjectives] = useState<CheckinObj[]>([])
   // { [objectiveId]: [ { id?, customer, project_description, segment, estimated_value_text, status } ] }
-  const [opportunities, setOpportunities] = useState({})
-  const [formState, setFormState] = useState({})
-  const [lastWeekState, setLastWeekState] = useState({})
+  const [opportunities, setOpportunities] = useState<Record<string, any[]>>({})
+  const [formState, setFormState] = useState<Record<string, any>>({})
+  const [lastWeekState, setLastWeekState] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [showComment, setShowComment] = useState({})
-  const [attachments, setAttachments] = useState([])
+  const [showComment, setShowComment] = useState<Record<string, boolean>>({})
+  const [attachments, setAttachments] = useState<any[]>([])
   const [uploading, setUploading] = useState(false)
   const [linkForm, setLinkForm] = useState({ show: false, name: '', url: '' })
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const thisWeek = getCurrentWeekStart()
   const lastWeek = getLastWeekStart()
 
@@ -88,10 +105,10 @@ function CheckinForm() {
         ...obj,
         sub_objectives: (obj.sub_objectives || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.created_at || '').localeCompare(b.created_at || ''))
       }))
-      setObjectives(sorted)
+      setObjectives(sorted as unknown as CheckinObj[])
 
       // seed opportunity rows for opportunity-tracking objectives (these persist across weeks)
-      const oppMap = {}
+      const oppMap: Record<string, any[]> = {}
       sorted.forEach(obj => {
         if (obj.opportunity_target) {
           const rows = (obj.objective_opportunities || [])
@@ -123,9 +140,9 @@ function CheckinForm() {
         .in('sub_objective_id', subIds)
         .eq('week_start', lastWeek)
 
-      const form = {}
-      const lw = {}
-      const sc = {}
+      const form: Record<string, any> = {}
+      const lw: Record<string, any> = {}
+      const sc: Record<string, boolean> = {}
 
       subIds.forEach(id => {
         const thisEntry = thisCheckins?.find(c => c.sub_objective_id === id)
@@ -166,7 +183,7 @@ function CheckinForm() {
     load()
   }, [viewAsId])
 
-  function updateField(subId, field, value) {
+  function updateField(subId: string, field: string, value: any) {
     setFormState(prev => ({
       ...prev,
       [subId]: { ...prev[subId], [field]: value, prefilled: false }
@@ -174,7 +191,7 @@ function CheckinForm() {
     setSaved(false)
   }
 
-  function toggleCheck(subId, field) {
+  function toggleCheck(subId: string, field: string) {
     setFormState(prev => {
       const current = prev[subId] || {}
       const isChecked = !current[field]
@@ -191,7 +208,7 @@ function CheckinForm() {
     setSaved(false)
   }
 
-  function updateOpportunity(objId, idx, field, value) {
+  function updateOpportunity(objId: string, idx: number, field: string, value: any) {
     setOpportunities(prev => {
       const rows = [...(prev[objId] || [])]
       rows[idx] = { ...rows[idx], [field]: value }
@@ -200,7 +217,7 @@ function CheckinForm() {
     setSaved(false)
   }
 
-  function addOpportunityRow(objId) {
+  function addOpportunityRow(objId: string) {
     setOpportunities(prev => ({
       ...prev,
       [objId]: [...(prev[objId] || []), blankOpportunity()],
@@ -208,7 +225,7 @@ function CheckinForm() {
     setSaved(false)
   }
 
-  function removeOpportunityRow(objId, idx) {
+  function removeOpportunityRow(objId: string, idx: number) {
     setOpportunities(prev => {
       const rows = [...(prev[objId] || [])]
       rows.splice(idx, 1)
@@ -217,7 +234,7 @@ function CheckinForm() {
     setSaved(false)
   }
 
-  function commentRequired(subId) {
+  function commentRequired(subId: string) {
     const entry = formState[subId]
     if (!entry?.status) return false
     const flagStatuses = ['at_risk', 'off_track', 'on_hold']
@@ -231,9 +248,9 @@ function CheckinForm() {
     return subIds.filter(id => commentRequired(id) && !(formState[id]?.comments?.trim()))
   }
 
-  const [commentErrors, setCommentErrors] = useState(new Set())
+  const [commentErrors, setCommentErrors] = useState<Set<string>>(new Set())
 
-  async function handleFileUpload(e) {
+  async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = '' // let the same file be re-picked later
@@ -299,7 +316,7 @@ function CheckinForm() {
     setLinkForm({ show: false, name: '', url: '' })
   }
 
-  async function handleDeleteAttachment(att) {
+  async function handleDeleteAttachment(att: any) {
     if (att.type === 'file' && att.file_path) {
       await supabase.storage.from('meeting-files').remove([att.file_path])
     }
@@ -307,7 +324,7 @@ function CheckinForm() {
     setAttachments(prev => prev.filter(a => a.id !== att.id))
   }
 
-  function formatFileSize(bytes) {
+  function formatFileSize(bytes: number | null | undefined) {
     if (!bytes) return ''
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB'
@@ -481,7 +498,7 @@ function CheckinForm() {
                 {activeSubs.map((sub, subIdx) => {
                   const entry = formState[sub.id] || {}
                   const lastStatus = lastWeekState[sub.id]
-                  const statusCfg = entry.status ? STATUS_CONFIG[entry.status] : null
+                  const statusCfg = entry.status ? STATUS_CONFIG[entry.status as StatusKey] : null
                   const isCommentRequired = commentRequired(sub.id)
                   const hasError = commentErrors.has(sub.id)
                   const commentVisible = isCommentRequired || showComment[sub.id] || !!(entry.comments)
@@ -562,13 +579,13 @@ function CheckinForm() {
 
                       {entry.prefilled && lastStatus && (
                         <div className="mt-1" style={{ color: '#38BDF8', fontSize: 10 }}>
-                          ℹ️ Pre-selected from last week ({STATUS_CONFIG[lastStatus]?.label})
+                          ℹ️ Pre-selected from last week ({STATUS_CONFIG[lastStatus as StatusKey]?.label})
                         </div>
                       )}
 
                       {isCommentRequired && (
                         <div style={{ color: hasError ? '#F87171' : '#F59E0B', fontSize: 11, marginTop: 2 }}>
-                          ⚠ Comment required -- status changed to {STATUS_CONFIG[entry.status]?.label}
+                          ⚠ Comment required -- status changed to {STATUS_CONFIG[entry.status as StatusKey]?.label}
                         </div>
                       )}
                       {commentVisible ? (

@@ -11,9 +11,9 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const viewAsId = searchParams.get('viewAs')
 
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [viewAsProfile, setViewAsProfile] = useState(null)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [viewAsProfile, setViewAsProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
