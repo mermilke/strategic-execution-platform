@@ -1,7 +1,7 @@
 # Strategic Tracker Setup Guide
 
 > A click-by-click walkthrough for beginners. If you already know your way
-> around Next.js and Supabase, the [README](README.md) covers the same ground
+> around Next.js and Supabase, the [README](../README.md) covers the same ground
 > faster.
 
 ## What you're building

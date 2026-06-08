@@ -1,7 +1,7 @@
 # Architecture & design notes
 
 A tour of how Strategic Tracker is built and why it's built that way. The
-[README](README.md) covers what it does; this is the engineering side.
+[README](../README.md) covers what it does; this is the engineering side.
 
 ## Shape of the app
 

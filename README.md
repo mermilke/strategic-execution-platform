@@ -182,11 +182,13 @@ the manager and admins see everyone. The server-only routes (briefing, cron,
 admin password reset) use the service-role key and never run in the browser.
 
 For the deeper version, including the AI briefing pipeline and the
-timezone-aware reminder logic, see [ARCHITECTURE.md](ARCHITECTURE.md).
+timezone-aware reminder logic, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Running it locally
 
-You'll need Node.js 20+ and a free [Supabase](https://supabase.com) project.
+You'll need Node.js 20+ and a free [Supabase](https://supabase.com) project. New
+to Next.js or Supabase? The [setup guide](docs/SETUP_GUIDE.md) walks through all
+of this click by click.
 
 1. Install dependencies:
    ```bash
