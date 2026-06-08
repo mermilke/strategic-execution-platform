@@ -186,7 +186,8 @@ to `admin` in the Supabase `users` table to get the manager views.
 
 ## Tests
 
-Unit tests cover the date and status logic with [Vitest](https://vitest.dev):
+Tests run on [Vitest](https://vitest.dev) and cover the date and status logic
+plus the dashboard and admin React components (jsdom + Testing Library):
 
 ```bash
 npm test
