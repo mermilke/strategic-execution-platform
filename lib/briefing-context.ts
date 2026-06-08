@@ -1,30 +1,47 @@
 // Pulls all the raw data the Weekly Briefing model sees.
 // Kept separate from the route so it's testable on its own.
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from './database.types'
+
+type Admin = SupabaseClient<Database>
 
 // Shared mailbox the briefing reads upcoming 1:1s from (the manager running them).
 const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
 
 /** YYYY-MM-DD of the Monday before `weekStart`. */
-export function previousMonday(weekStart) {
+export function previousMonday(weekStart: string): string {
   const d = new Date(weekStart + 'T00:00:00Z')
   d.setUTCDate(d.getUTCDate() - 7)
   return d.toISOString().slice(0, 10)
 }
 
-function newAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+function newAdminClient(): Admin {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
+
+// The parts of a Microsoft Graph calendar event the briefing reads.
+type GraphEvent = {
+  subject?: string | null
+  start?: { dateTime?: string | null } | null
+  end?: { dateTime?: string | null } | null
+  isAllDay?: boolean
+  isCancelled?: boolean
+  organizer?: unknown
+}
+
+type CalendarResult = { events: GraphEvent[]; error: string | null }
+
+type TokenRefresh = { access_token: string; refresh_token?: string; expires_in: number }
 
 // Fetch the manager's upcoming 14-day calendar. Returns [] if the integration
 // isn't configured, there are no MS tokens, refresh fails, or Graph errors.
 // Tries every stored MS token until one works (any token with
 // Calendars.Read.Shared on the shared mailbox will do).
-async function fetchManagerCalendar(admin, daysAhead = 14) {
+async function fetchManagerCalendar(admin: Admin, daysAhead = 14): Promise<CalendarResult> {
   if (!CALENDAR_MAILBOX) return { events: [], error: 'not_configured' }
   try {
     const { data: tokenRows } = await admin
@@ -38,15 +55,15 @@ async function fetchManagerCalendar(admin, daysAhead = 14) {
     const startStr = now.toISOString()
     const endStr = endDate.toISOString()
 
-    async function refresh(refreshToken) {
+    async function refresh(refreshToken: string): Promise<TokenRefresh | null> {
       const res = await fetch(
         `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
-            client_id: process.env.AZURE_CLIENT_ID,
-            client_secret: process.env.AZURE_CLIENT_SECRET,
+            client_id: process.env.AZURE_CLIENT_ID!,
+            client_secret: process.env.AZURE_CLIENT_SECRET!,
             refresh_token: refreshToken,
             grant_type: 'refresh_token',
             scope: 'User.Read Calendars.Read Calendars.Read.Shared offline_access',
@@ -54,10 +71,10 @@ async function fetchManagerCalendar(admin, daysAhead = 14) {
         }
       )
       if (!res.ok) return null
-      return res.json()
+      return res.json() as Promise<TokenRefresh>
     }
 
-    async function tryGraph(accessToken) {
+    async function tryGraph(accessToken: string): Promise<GraphEvent[] | null> {
       const url = `https://graph.microsoft.com/v1.0/users/${CALENDAR_MAILBOX}/calendarview` +
         `?startDateTime=${startStr}&endDateTime=${endStr}` +
         `&$orderby=start/dateTime&$top=100` +
@@ -70,7 +87,7 @@ async function fetchManagerCalendar(admin, daysAhead = 14) {
         cache: 'no-store',
       })
       if (!res.ok) return null
-      const data = await res.json()
+      const data = (await res.json()) as { value?: GraphEvent[] }
       // Keep cancelled events, the caller needs to know about cancellations so
       // the briefing can frame "check-in not late, 1:1 was cancelled" correctly.
       return data.value || []
@@ -103,12 +120,12 @@ async function fetchManagerCalendar(admin, daysAhead = 14) {
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'UTC'
 
 /** "Thu, Jun 4 at 10:00 AM CDT" in the app timezone. null if missing. */
-function fmtMeetingLabel(iso) {
+function fmtMeetingLabel(iso: string | null | undefined): string | null {
   if (!iso) return null
   // iso is like "2026-05-26T16:00:00.0000000" (no Z), append Z so JS parses as UTC
   const safe = /Z$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z'
   const d = new Date(safe)
-  if (isNaN(d)) return null
+  if (isNaN(d.getTime())) return null
   // toLocaleString handles DST (CDT/CST etc.) for the zone.
   const date = d.toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
@@ -121,18 +138,21 @@ function fmtMeetingLabel(iso) {
   return `${date} at ${time}`
 }
 
+type Meeting = { label: string | null; subject?: string | null; is_cancelled: boolean }
+type MeetingsForDR = { next_confirmed: Meeting | null; all_meetings: Meeting[] }
+
 // All meetings (live + cancelled) over the next 14 days whose subject mentions
 // this DR's first name, plus a derived "next confirmed" slot.
 //   {
 //     next_confirmed: { label, subject } | null,    // first non-cancelled
 //     all_meetings:   [{ label, is_cancelled }, …]  // ordered by start
 //   }
-function findMeetingsForDR(events, drFullName) {
+function findMeetingsForDR(events: GraphEvent[] | null | undefined, drFullName: string | null | undefined): MeetingsForDR {
   if (!events?.length || !drFullName) {
     return { next_confirmed: null, all_meetings: [] }
   }
   const first = drFullName.split(/\s+/)[0].toLowerCase()
-  const matches = events
+  const matches: Meeting[] = events
     .filter(e => (e.subject || '').toLowerCase().includes(first))
     .map(e => ({
       label: fmtMeetingLabel(e.start?.dateTime),
@@ -145,7 +165,7 @@ function findMeetingsForDR(events, drFullName) {
 
 // Build the full briefing context for a given week: this week + previous week
 // check-ins (for deltas), plus the calendar lookup.
-export async function buildBriefingContext(weekStart) {
+export async function buildBriefingContext(weekStart: string) {
   const admin = newAdminClient()
   const lastWeek = previousMonday(weekStart)
 
@@ -186,21 +206,23 @@ export async function buildBriefingContext(weekStart) {
 
   // Build per-DR rollup
   const drIds = new Set((drs || []).map(d => d.id))
-  const objByOwner = new Map()
+  const objByOwner = new Map<string, NonNullable<typeof objectives>>()
   for (const o of (objectives || [])) {
     if (!drIds.has(o.owner_id)) continue
     if (!objByOwner.has(o.owner_id)) objByOwner.set(o.owner_id, [])
-    objByOwner.get(o.owner_id).push(o)
+    objByOwner.get(o.owner_id)!.push(o)
   }
 
   // Index check-ins by sub_objective_id and week
-  const checkinIdx = new Map() // key = `${sub_id}|${week_start}`
+  type Checkin = NonNullable<typeof checkins>[number]
+  const checkinIdx = new Map<string, Checkin>() // key = `${sub_id}|${week_start}`
   for (const c of (checkins || [])) {
     checkinIdx.set(`${c.sub_objective_id}|${c.week_start}`, c)
   }
 
   // Index latest meeting notes per DR
-  const latestNoteByDR = new Map()
+  type MeetingNote = NonNullable<typeof meetingNotes>[number]
+  const latestNoteByDR = new Map<string, MeetingNote>()
   for (const n of (meetingNotes || [])) {
     if (!latestNoteByDR.has(n.user_id)) latestNoteByDR.set(n.user_id, n)
   }
@@ -209,7 +231,7 @@ export async function buildBriefingContext(weekStart) {
     const drObjectives = (objByOwner.get(dr.id) || []).map(o => {
       const subs = (o.sub_objectives || [])
         .filter(s => s.is_active)
-        .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0))
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
         .map(sub => ({
           id: sub.id,
           title: sub.is_implicit ? null : (sub.short_title || sub.title),
