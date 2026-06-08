@@ -1,4 +1,4 @@
-# Strategic Tracker Setup Guide
+# Strategic Execution Platform Setup Guide
 
 > A click-by-click walkthrough for beginners. If you already know your way
 > around Next.js and Supabase, the [README](../README.md) covers the same ground
@@ -29,13 +29,13 @@ Two ways to do this.
 
 **Option A, download the zip (easiest):**
 - You'll get the project as a zip file
-- Unzip it somewhere easy to find, like `C:\Projects\strategic-tracker`
+- Unzip it somewhere easy to find, like `C:\Projects\strategic-execution-platform`
 - In VS Code: File > Open Folder, then pick that folder
 
 **Option B, clone it with git:**
 - In the VS Code Terminal: `cd C:\Projects` (or wherever you want it)
-- `git clone https://github.com/YOUR-USERNAME/strategic-tracker.git`
-- In VS Code: File > Open Folder, then pick the `strategic-tracker` folder
+- `git clone https://github.com/YOUR-USERNAME/strategic-execution-platform.git`
+- In VS Code: File > Open Folder, then pick the `strategic-execution-platform` folder
 
 ---
 
@@ -46,7 +46,7 @@ Two ways to do this.
 2. Sign up with GitHub or email (free)
 3. Click **New project**
 4. Fill in:
-   - **Name:** `strategic-tracker` (or anything)
+   - **Name:** `strategic-execution-platform` (or anything)
    - **Database password:** make something strong, and save it somewhere
    - **Region:** pick the closest to you (e.g. US East)
 5. Click **Create new project**. It takes about a minute to set up.
@@ -137,13 +137,13 @@ Refresh your browser and you'll see the manager dashboard and Manage Team menu.
 
 ### Step 13: Push to GitHub (needed for Vercel)
 1. Go to https://github.com and create a free account if you don't have one
-2. Create a new repository called `strategic-tracker` and set it to **Private**
+2. Create a new repository called `strategic-execution-platform` and set it to **Private**
 3. In the VS Code Terminal:
 ```bash
 git init
 git add .
 git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR-USERNAME/strategic-tracker.git
+git remote add origin https://github.com/YOUR-USERNAME/strategic-execution-platform.git
 git push -u origin main
 ```
 
@@ -154,7 +154,7 @@ git push -u origin main
    - `NEXT_PUBLIC_SUPABASE_URL` = your Supabase URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your Supabase anon key
 4. Click **Deploy**
-5. After a couple of minutes you'll get a live URL like `https://strategic-tracker-yourname.vercel.app`
+5. After a couple of minutes you'll get a live URL like `https://strategic-execution-platform-yourname.vercel.app`
 
 **Share that URL with your team.** They can bookmark it and use it from any device.
 

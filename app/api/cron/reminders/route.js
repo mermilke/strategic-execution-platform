@@ -197,7 +197,7 @@ function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime,
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
       <div style="text-align: center; margin-bottom: 32px;">
-        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Tracker</span>
+        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Execution Platform</span>
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
@@ -239,7 +239,7 @@ function buildReminderEmail(firstName, meetingSubject, meetingDate, meetingTime,
       </div>
       <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;" />
       <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">
-        This is an automated reminder from Strategic Tracker.<br />
+        This is an automated reminder from Strategic Execution Platform.<br />
         Please do not reply to this email.
       </p>
     </div>
@@ -251,7 +251,7 @@ function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
       <div style="text-align: center; margin-bottom: 32px;">
-        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Tracker</span>
+        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Execution Platform</span>
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
@@ -293,7 +293,7 @@ function buildOverdueEmail(firstName, meetingSubject, meetingDate, meetingTime, 
       </div>
       <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;" />
       <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">
-        This is an automated reminder from Strategic Tracker.<br />
+        This is an automated reminder from Strategic Execution Platform.<br />
         Please do not reply to this email.
       </p>
     </div>
@@ -304,7 +304,7 @@ function buildCancelledEmail(firstName, siteUrl) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
       <div style="text-align: center; margin-bottom: 32px;">
-        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Tracker</span>
+        <span style="display: inline-block; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">Strategic Execution Platform</span>
       </div>
       <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #1a1a2e;">Hi ${firstName},</h1>
       <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 16px;">
@@ -343,7 +343,7 @@ function buildCancelledEmail(firstName, siteUrl) {
       </div>
       <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;" />
       <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">
-        This is an automated reminder from Strategic Tracker.<br />
+        This is an automated reminder from Strategic Execution Platform.<br />
         Please do not reply to this email.
       </p>
     </div>
@@ -629,7 +629,7 @@ export async function GET(request) {
 
       try {
         await resend.emails.send({
-          from: process.env.REMINDER_FROM_EMAIL || 'Strategic Tracker <onboarding@resend.dev>',
+          from: process.env.REMINDER_FROM_EMAIL || 'Strategic Execution Platform <onboarding@resend.dev>',
           to: [dr.email],
           subject: emailSubject,
           html: emailHtml,

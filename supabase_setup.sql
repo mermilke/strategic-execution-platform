@@ -1,4 +1,4 @@
--- Strategic Tracker, Supabase SQL setup.
+-- Strategic Execution Platform, Supabase SQL setup.
 -- Paste this entire file into Supabase > SQL Editor > Run.
 
 -- 1. USERS TABLE (extends Supabase auth)

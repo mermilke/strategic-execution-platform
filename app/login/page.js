@@ -135,10 +135,10 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center mb-5">
             <div style={{ padding: 8, borderRadius: 22, border: '1px solid rgba(37, 99, 235,0.25)', background: '#FFFFFF', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-              <img src="/icon.svg" alt="Strategic Tracker" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 18, display: 'block' }} />
+              <img src="/icon.svg" alt="Strategic Execution Platform" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 18, display: 'block' }} />
             </div>
           </div>
-          <h1 className="font-display text-3xl text-slate-800 mb-2" style={{ letterSpacing: '0.05em' }}>Strategic Tracker</h1>
+          <h1 className="font-display text-3xl text-slate-800 mb-2" style={{ letterSpacing: '0.05em' }}>Strategic Execution</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sign in to your workspace</p>
         </div>
 

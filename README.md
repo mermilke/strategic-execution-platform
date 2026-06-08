@@ -1,10 +1,11 @@
-# Strategic Tracker
+# Strategic Execution Platform
 
-[![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
+[![CI](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml)
 
 **▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click, no signup, as a manager or a team member.
 
-Strategic Tracker keeps a management team aligned on its long-term goals. Each
+Strategic Execution Platform keeps a management team aligned on its long-term
+goals. Each
 direct report spends about a minute a week marking where their strategic
 objectives stand; the manager gets a live dashboard of what's on track, what's
 at risk, who needs help, and what to bring up in the next 1:1, plus an AI-written
@@ -19,7 +20,7 @@ spend all year chopping wood and never stop to sharpen the axe. The usual
 checkpoint is a quarterly or mid-year review, and by then a stalled initiative
 has already lost months.
 
-I built Strategic Tracker to close that gap. A manager assigns each direct report
+I built Strategic Execution Platform to close that gap. A manager assigns each direct report
 a few strategic objectives, and every week each report takes about a minute to
 say where those objectives stand. The hard part of any weekly habit is friction:
 if it feels like a chore, people stop doing it. So the whole thing is built to be

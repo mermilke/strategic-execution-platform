@@ -70,7 +70,7 @@ export default function Navbar({ user, profile }) {
         >
           <img
             src="/icon.svg"
-            alt="Strategic Tracker"
+            alt="Strategic Execution Platform"
             style={{ height: 30, width: 30, objectFit: 'contain', borderRadius: 8 }}
           />
           <span style={{
@@ -79,7 +79,7 @@ export default function Navbar({ user, profile }) {
             whiteSpace: 'nowrap',
           }}>
             <span style={{ color: '#0F172A' }}>Strategic</span>
-            <span style={{ color: '#2563EB' }}> Tracker</span>
+            <span style={{ color: '#2563EB' }}> Execution</span>
           </span>
         </div>
 

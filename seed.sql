@@ -1,4 +1,4 @@
--- Strategic Tracker demo seed data (development/demo only).
+-- Strategic Execution Platform demo seed data (development/demo only).
 -- Run after supabase_setup.sql. Builds a fictional 8-person org with an
 -- intentionally uneven shape (different objective and sub-objective counts,
 -- different amounts of history, a couple of people behind on their check-ins)
