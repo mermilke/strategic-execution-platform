@@ -2,16 +2,47 @@
 
 [![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-tracker-mu.vercel.app)**
+**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click, no signup, as a manager or a team member.
 
-Strategic Tracker turns scattered status updates into one live view of how a
-team is tracking against its goals. Each week reports spend a minute logging
-where each objective stands; the manager opens a single dashboard to see what's
-at risk, who needs support, and what to bring to each 1:1 -- with an AI briefing
-that writes up the week automatically.
+Strategic Tracker keeps a management team aligned on its long-term goals. Each
+direct report spends about a minute a week marking where their strategic
+objectives stand; the manager gets a live dashboard of what's on track, what's
+at risk, who needs help, and what to bring up in the next 1:1, plus an AI-written
+weekly briefing that sums it up.
 
-A portfolio build of an internal tool I shipped to a real team. Source-available
-(see [License](#license)).
+## Background
+
+Strategy is the first thing to slip when everyone is heads-down on this week's
+fires. The day-to-day tactical work always feels more urgent, so the long-term
+initiatives -- the ones that actually move the business -- quietly stall. You can
+spend all year chopping wood and never stop to sharpen the axe. The usual
+checkpoint is a quarterly or mid-year review, and by then a stalled initiative
+has already lost months.
+
+I built Strategic Tracker to close that gap. A manager assigns each direct report
+a few strategic objectives, and every week each report takes about a minute to
+say where those objectives stand. The hard part of any weekly habit is friction:
+if it feels like a chore, people stop doing it. So the whole thing is built to be
+nearly effortless --
+
+- **Last week's status carries over automatically.** If nothing changed, there
+  is nothing to do.
+- **Changing a status takes one click, but it asks for a short reason** -- so a
+  slip from "on track" to "at risk" never goes by unexplained.
+- **The one thing everyone confirms each week is a single yes/no:** did this move
+  this week? That question is what drives visibility and accountability.
+- **Comments are optional**, there when a report wants to add detail and never
+  required.
+
+The result is a continuous, honest read on the strategic work instead of a
+twice-a-year surprise. The manager gets quick-glance status tiles, an AI summary
+of the week, and calendar context showing when each check-in is due and when the
+next 1:1 is, so that meeting is spent on the real blockers rather than gathering
+status.
+
+It started as a tool for senior leadership -- keeping a leadership team's
+strategic initiatives on track -- but nothing about it is specific to the
+C-suite. It works for any manager and their team.
 
 ## Screenshots
 
@@ -63,7 +94,7 @@ Automation:
   yet" from "overdue" from "your 1:1 was cancelled," and it stops once the
   check-in is in.
 
-## Tech stack
+## Tech
 
 - Next.js 14 (App Router) and React 18
 - Supabase for Postgres, auth, row-level security, Realtime, and storage
@@ -214,9 +245,27 @@ deployed base URL) and a `CRON_SECRET` Actions secret that matches the
 - **Reminder email** needs a Resend API key and a verified sender address.
 - **Smartsheet** stays off unless `NEXT_PUBLIC_SMARTSHEET_USER_EMAIL` is set.
 
-## Roadmap
+## Limitations & future work
 
-Things I'd build next, roughly in order of value:
+Things I'm aware of and would improve given time:
+
+- **The codebase is plain JavaScript, not TypeScript.** Data shapes are
+  validated where they cross a boundary (Zod on the AI path), but not statically
+  across the app. TypeScript would catch a class of errors at build time now that
+  the shapes are stable.
+- **Test coverage is partial.** Vitest covers the date and status logic and the
+  dashboard and admin components; the API route handlers and the SQL row-level
+  security policies are still verified by hand. Integration tests around the
+  routes and RLS would make refactors safer.
+- **The 1:1 calendar match is heuristic.** Reminders identify each report's 1:1
+  by matching calendar event titles against common name patterns, so an unusually
+  titled meeting can be missed. Matching on a stable calendar category or the
+  attendee list would be more robust.
+- **Reminders fire on a fixed UTC schedule.** The cron pings a handful of UTC
+  times to approximate 4pm across regions rather than each report's exact local
+  time. Per-user scheduled jobs would be more precise.
+
+Features I'd add next, roughly in order of value:
 
 - **Comment loop** so the manager can leave a question on a specific at-risk item
   and the report sees it on their next check-in. Right now that conversation only
@@ -226,7 +275,6 @@ Things I'd build next, roughly in order of value:
 - **Objective target dates surfaced** as countdowns and overdue flags (the data
   is already there).
 - **Slack/Teams delivery** of the briefing and at-risk alerts.
-- **TypeScript** across the codebase now that the data shapes are stable.
 
 ## License
 
