@@ -7,26 +7,28 @@ import Spinner from './Spinner'
 import { getCurrentWeekStart, formatWeekLabel, statusTint, bySortOrder } from '../lib/utils'
 import { startOfWeek, format } from 'date-fns'
 
-const toLetter = i => String.fromCharCode(65 + i)
+const toLetter = (i: number) => String.fromCharCode(65 + i)
 
-export default function DirectReportDashboard({ currentUser }) {
+export default function DirectReportDashboard({ currentUser }: {
+  currentUser: { id: string; full_name?: string | null }
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const viewAsId = searchParams.get('viewAs')
   const checkinHref = viewAsId ? `/checkin?viewAs=${viewAsId}` : '/checkin'
-  const [objectives, setObjectives] = useState([])
+  const [objectives, setObjectives] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [checkinMap, setCheckinMap] = useState({})
+  const [checkinMap, setCheckinMap] = useState<Record<string, any>>({})
   const thisWeek = getCurrentWeekStart()
   const [selectedWeek, setSelectedWeek] = useState(thisWeek)
 
   // earliest week comes from this user's check-ins so the range covers all real
   // history. Memoized so it only recomputes when the objectives change.
   const weekOptions = useMemo(() => {
-    const weeks = []
+    const weeks: string[] = []
     const cur = startOfWeek(new Date(), { weekStartsOn: 1 })
 
-    let earliest = null
+    let earliest: string | null = null
     for (const obj of (objectives || [])) {
       for (const s of (obj.sub_objectives || [])) {
         for (const c of (s.weekly_checkins || [])) {
@@ -70,7 +72,7 @@ export default function DirectReportDashboard({ currentUser }) {
       }
     })
 
-    const map = {}
+    const map: Record<string, any> = {}
     objs.forEach(obj => {
       obj.sub_objectives?.forEach(sub => {
         const entry = sub.weekly_checkins?.find(c => c.week_start === selectedWeek)
@@ -183,7 +185,7 @@ export default function DirectReportDashboard({ currentUser }) {
             </div>
 
             <div className="space-y-2 pl-4">
-              {(obj.sub_objectives || []).filter(s => s.is_active !== false).map((sub, subIdx) => {
+              {(obj.sub_objectives || []).filter((s: any) => s.is_active !== false).map((sub: any, subIdx: number) => {
                 const c = checkinMap[sub.id]
                 const status = c?.status
                 const tint = statusTint(status)

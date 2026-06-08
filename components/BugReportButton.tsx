@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
@@ -8,12 +9,12 @@ export default function BugReportButton() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [description, setDescription] = useState('')
-  const [screenshot, setScreenshot] = useState(null)
-  const [screenshotPreview, setScreenshotPreview] = useState(null)
+  const [screenshot, setScreenshot] = useState<File | null>(null)
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [userId, setUserId] = useState(null)
-  const fileInputRef = useRef(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // don't show on login / reset-password / landing
   const hiddenPages = ['/login', '/reset-password', '/']
@@ -29,8 +30,8 @@ export default function BugReportButton() {
 
   if (shouldHide || !userId) return null
 
-  const handleScreenshotSelect = (e) => {
-    const file = e.target.files[0]
+  const handleScreenshotSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
       alert('Screenshot must be under 5MB')
@@ -38,7 +39,7 @@ export default function BugReportButton() {
     }
     setScreenshot(file)
     const reader = new FileReader()
-    reader.onload = (ev) => setScreenshotPreview(ev.target.result)
+    reader.onload = (ev) => setScreenshotPreview((ev.target?.result as string) ?? null)
     reader.readAsDataURL(file)
   }
 
@@ -48,7 +49,7 @@ export default function BugReportButton() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!description.trim()) return
 

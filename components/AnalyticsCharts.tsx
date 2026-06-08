@@ -1,12 +1,14 @@
 'use client'
 import { useState, useMemo } from 'react'
+import type { ReactNode } from 'react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { format } from 'date-fns'
 import { STATUS_HEX, STATUS_LABELS } from '../lib/utils'
+import type { DashUser, DashCheckin } from './dashboard/types'
 
-const STATUS_NUM = { completed: 6, on_track: 5, at_risk: 4, off_track: 3, on_hold: 2, not_started: 1 }
+const STATUS_NUM: Record<string, number> = { completed: 6, on_track: 5, at_risk: 4, off_track: 3, on_hold: 2, not_started: 1 }
 
-function ChartCard({ title, subtitle, children }) {
+function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <div className="rounded-xl p-6" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
       <h3 className="text-sm font-semibold text-slate-700 mb-1">{title}</h3>
@@ -17,7 +19,7 @@ function ChartCard({ title, subtitle, children }) {
   )
 }
 
-function fmtWeek(w) {
+function fmtWeek(w: string) {
   return format(new Date(w + 'T00:00:00'), 'MMM d')
 }
 
@@ -26,7 +28,7 @@ const tooltipStyle = {
   labelStyle: { color: '#64748B', marginBottom: 4 },
 }
 
-export default function AnalyticsCharts({ data, weekOptions }) {
+export default function AnalyticsCharts({ data, weekOptions }: { data: DashUser[]; weekOptions: string[] }) {
   const [selectedUser, setSelectedUser] = useState('')
   const [selectedSub, setSelectedSub] = useState('')
 
@@ -62,7 +64,7 @@ export default function AnalyticsCharts({ data, weekOptions }) {
         (u.objectives || []).flatMap(o =>
           (o.sub_objectives || []).map(s =>
             s.weekly_checkins?.find(c => c.week_start === week)
-          ).filter(Boolean)
+          ).filter((c): c is DashCheckin => !!c)
         )
       )
       return {
@@ -96,7 +98,7 @@ export default function AnalyticsCharts({ data, weekOptions }) {
 
   // individual initiative trend
   const allSubs = useMemo(() => {
-    const subs = []
+    const subs: { id: string; title: string; userId: string; userName?: string | null; objTitle: string; checkins: DashCheckin[] }[] = []
     data.forEach(u => {
       (u.objectives || []).forEach(o => {
         (o.sub_objectives || []).forEach(s => {
@@ -115,7 +117,7 @@ export default function AnalyticsCharts({ data, weekOptions }) {
     if (!sub) return []
     return weekOptions.map(week => {
       const c = sub.checkins.find(ch => ch.week_start === week)
-      return { week, label: fmtWeek(week), status: c?.status || null, value: c ? STATUS_NUM[c.status] || 0 : null }
+      return { week, label: fmtWeek(week), status: c?.status || null, value: c ? STATUS_NUM[c.status ?? ''] || 0 : null }
     })
   }, [selectedSub, allSubs, weekOptions])
 

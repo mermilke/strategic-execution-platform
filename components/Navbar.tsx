@@ -1,18 +1,22 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
-export default function Navbar({ user, profile }) {
+export default function Navbar({ user, profile }: {
+  user?: { email?: string | null } | null
+  profile?: { role?: string | null; full_name?: string | null } | null
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const isManager = profile?.role === 'manager' || profile?.role === 'admin'
 
-  const [directReports, setDirectReports] = useState([])
+  const [directReports, setDirectReports] = useState<Array<{ id: string; full_name: string | null }>>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [showDashDropdown, setShowDashDropdown] = useState(false)
-  const dropdownTimeout = useRef(null)
-  const dashDropdownTimeout = useRef(null)
+  const dropdownTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dashDropdownTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!isManager) return
@@ -33,7 +37,7 @@ export default function Navbar({ user, profile }) {
   }
 
   function handleDropdownEnter() {
-    clearTimeout(dropdownTimeout.current)
+    clearTimeout(dropdownTimeout.current ?? undefined)
     setShowDropdown(true)
   }
 
@@ -42,7 +46,7 @@ export default function Navbar({ user, profile }) {
   }
 
   function handleDashDropdownEnter() {
-    clearTimeout(dashDropdownTimeout.current)
+    clearTimeout(dashDropdownTimeout.current ?? undefined)
     setShowDashDropdown(true)
   }
 
@@ -242,7 +246,12 @@ export default function Navbar({ user, profile }) {
   )
 }
 
-function NavLink({ href, active, children, router }) {
+function NavLink({ href, active, children, router }: {
+  href: string
+  active: boolean
+  children: ReactNode
+  router: { push: (href: string) => void }
+}) {
   return (
     <button onClick={() => router.push(href)} style={{
       padding: '6px 14px', borderRadius: 6, fontSize: 13, border: 'none',
