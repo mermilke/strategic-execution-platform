@@ -2,18 +2,16 @@
 
 [![CI](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-tracker/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click signs you in as a manager or a team member, with a fictional team's data to explore.
+**▶ [Live demo](https://strategic-tracker-mu.vercel.app)**
 
-A small web app for keeping a management team aligned week to week. Each direct
-report logs a quick weekly check-in against their strategic objectives, and the
-manager gets a live dashboard showing what's on track, what's at risk, who needs
-help, and what to bring up in the next 1:1. There's also an AI-written Monday
-briefing that sums up the week.
+Strategic Tracker turns scattered status updates into one live view of how a
+team is tracking against its goals. Each week reports spend a minute logging
+where each objective stands; the manager opens a single dashboard to see what's
+at risk, who needs support, and what to bring to each 1:1 -- with an AI briefing
+that writes up the week automatically.
 
-I built it as an internal tool for one executive team, then generalized it into
-the version here.
-
-It's source-available, not open source. See [License](#license).
+A portfolio build of an internal tool I shipped to a real team. Source-available
+(see [License](#license)).
 
 ## Screenshots
 
