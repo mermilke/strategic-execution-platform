@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml)
 
-**▶ [Live demo](https://strategic-tracker-mu.vercel.app)** -- one click, no signup, as a manager or a team member.
+**▶ [Live demo](https://strategic-execution.vercel.app)** -- one click, no signup, as a manager or a team member.
 
 Strategic Execution Platform keeps a management team aligned on its long-term
 goals. Each
