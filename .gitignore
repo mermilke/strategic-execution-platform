@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 .vercel
 .claude/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
