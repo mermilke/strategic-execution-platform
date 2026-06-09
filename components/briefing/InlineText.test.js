@@ -45,7 +45,7 @@ describe('InlineText', () => {
   })
 
   it('returns nothing for non-string input', () => {
-    const { container } = render(<InlineText>{null as unknown as string}</InlineText>)
+    const { container } = render(<InlineText>{null}</InlineText>)
     expect(container.textContent).toBe('')
   })
 })
