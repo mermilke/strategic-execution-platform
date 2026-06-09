@@ -1,8 +1,13 @@
 // Pure helpers for the manager dashboard, kept out of the component so they can be unit tested.
+import { STATUS_HEX } from './utils'
 
-// Bar fill % and color for the snapshot tiles, keyed by status.
+// Bar fill % for the snapshot tiles, keyed by status.
 export const STATUS_PROGRESS: Record<string, number> = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
-export const STATUS_BAR_COLOR: Record<string, string> = { completed: '#2563EB', on_track: '#34D399', at_risk: '#F59E0B', off_track: '#D62027', on_hold: '#A78BFA', not_started: '#94A3B8' }
+
+// Bar color per status. Reuses the shared status palette so there's a single
+// source of truth; only "completed" overrides it, using the brand blue on the
+// progress bar (its badge elsewhere uses the sky tone).
+export const STATUS_BAR_COLOR: Record<string, string> = { ...STATUS_HEX, completed: '#2563EB' }
 
 type Checkin = {
   week_start: string
