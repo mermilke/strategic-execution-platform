@@ -119,6 +119,12 @@ CREATE TRIGGER users_role_guard
   BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE PROCEDURE public.enforce_user_role_guard();
 
+-- The trigger function is never called directly; triggers fire regardless of
+-- EXECUTE grants, so keep it off the exposed PostgREST RPC surface. (The helper
+-- is_manager_or_admin stays callable because the users SELECT policy evaluates
+-- it as the querying role; it only ever returns the caller's own role flag.)
+REVOKE EXECUTE ON FUNCTION public.enforce_user_role_guard() FROM PUBLIC, anon, authenticated;
+
 -- Objectives: manager/admin can see all; direct reports see their own
 CREATE POLICY "objectives_select" ON strategic_objectives FOR SELECT USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('manager', 'admin'))
