@@ -57,27 +57,33 @@ function escapeHtml(s: unknown) {
     .replace(/"/g, '&quot;')
 }
 
+// Wall-clock fields of "now" as seen in `timeZone`, read straight from Intl.
+// The old idiom -- new Date(now.toLocaleString('en-US', { timeZone })) -- builds
+// a Date by re-parsing a localized string in the SERVER's zone, which drifts
+// around DST boundaries and silently assumes the server clock is UTC.
+// formatToParts hands back the zone's own date/hour/weekday with no round-trip.
+function zonedNow(timeZone: string): { date: string; hour: number; weekday: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', hour12: false, weekday: 'short',
+  }).formatToParts(new Date())
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+  let hour = parseInt(get('hour'), 10)
+  if (hour === 24) hour = 0 // some engines emit "24" for midnight under hour12:false
+  const WD: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, hour, weekday: WD[get('weekday')] ?? 0 }
+}
+
 function isTargetHour(timezone: string, targetHour: number) {
   // Only fire when the DR's local hour is exactly the target. Multiple UTC cron
   // firings (one per timezone x DST combo) line up so each DR gets the email at
   // 4pm in their own clock.
-  const now = new Date()
-  const localTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  return localTime.getHours() === targetHour
-}
-
-function getTomorrowDateInTimezone(timezone: string) {
-  const now = new Date()
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  const tomorrow = new Date(localNow)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return tomorrow.toISOString().split('T')[0]
+  return zonedNow(timezone).hour === targetHour
 }
 
 function getTodayDateInTimezone(timezone: string) {
-  const now = new Date()
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  return localNow.toISOString().split('T')[0]
+  return zonedNow(timezone).date
 }
 
 // Constant-time compare so the header check doesn't leak the secret through
@@ -160,17 +166,6 @@ function isOneOnOneFor(event: GraphEvent, firstName: string) {
 function findAllMeetingsForDR(events: GraphEvent[], drName: string) {
   const firstName = drName.split(' ')[0].toLowerCase()
   return events.filter(e => isOneOnOneFor(e, firstName))
-}
-
-// Monday of the current week as YYYY-MM-DD in the given timezone
-function getMondayOfWeekInTz(timezone: string) {
-  const now = new Date()
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  const dayOfWeek = localNow.getDay() // 0 = Sun, 1 = Mon, ..., 6 = Sat
-  const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-  const monday = new Date(localNow)
-  monday.setDate(monday.getDate() + daysToMonday)
-  return monday.toISOString().split('T')[0]
 }
 
 // Convert Graph dateTime (UTC, possibly without Z suffix) to a YYYY-MM-DD date
@@ -424,13 +419,6 @@ export async function GET(request: Request) {
     if (!directReports?.length) {
       return NextResponse.json({ message: filterEmail ? `No DR matched email ${filterEmail}` : 'No active direct reports', sent: 0 })
     }
-
-    const nowUTC = new Date()
-    const tempDate = new Date(nowUTC.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE }))
-    const dayOfWeek = tempDate.getDay()
-    const monday = new Date(tempDate)
-    monday.setDate(tempDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-    const weekStart = monday.toISOString().split('T')[0]
 
     const results: any[] = []
 
