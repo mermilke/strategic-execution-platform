@@ -8,8 +8,12 @@ import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } f
 import { startOfWeek, format, subWeeks, addWeeks } from 'date-fns'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '../../lib/database.types'
+import type { GraphEvent } from '../../lib/calendar-match'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
+type Checkin = Database['public']['Tables']['weekly_checkins']['Row']
+type MeetingAttachment = Database['public']['Tables']['meeting_attachments']['Row']
+type DirectReport = Pick<Database['public']['Tables']['users']['Row'], 'id' | 'full_name' | 'email'>
 
 type MeetSub = {
   id: string
@@ -17,7 +21,7 @@ type MeetSub = {
   is_active?: boolean | null
   sort_order?: number | null
   created_at?: string | null
-  weekly_checkins?: any[] | null
+  weekly_checkins?: Checkin[] | null
 }
 type MeetObj = {
   id: string
@@ -35,7 +39,7 @@ function MeetingContent() {
   const [loading, setLoading] = useState(true)
 
   // direct reports (manager only)
-  const [directReports, setDirectReports] = useState<any[]>([])
+  const [directReports, setDirectReports] = useState<DirectReport[]>([])
   const [selectedUserId, setSelectedUserId] = useState(initialUserId || '')
   const [selectedUserName, setSelectedUserName] = useState('')
 
@@ -46,13 +50,13 @@ function MeetingContent() {
   const [objectives, setObjectives] = useState<MeetObj[]>([])
   const [checkins, setCheckins] = useState<Record<string, any>>({})
   const [lastWeekCheckins, setLastWeekCheckins] = useState<Record<string, any>>({})
-  const [attachments, setAttachments] = useState<any[]>([])
+  const [attachments, setAttachments] = useState<MeetingAttachment[]>([])
   const [agendaCollapsed, setAgendaCollapsed] = useState(true)
   const [smartsheetData, setSmartsheetData] = useState<any[]>([])
   const [smartsheetExpanded, setSmartsheetExpanded] = useState<Record<string, boolean>>({})
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
+  const [calendarEvents, setCalendarEvents] = useState<GraphEvent[]>([])
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null) // null=loading, true/false
-  const [nextMeeting, setNextMeeting] = useState<any>(null) // next 1:1 for selected user
+  const [nextMeeting, setNextMeeting] = useState<GraphEvent | null>(null) // next 1:1 for selected user
 
   // right panel notes
   const [notes, setNotes] = useState('')
@@ -507,7 +511,7 @@ function MeetingContent() {
             </span>
             <span className="text-sm font-semibold" style={{ color: '#2563EB' }}>
               {(() => {
-                const start = new Date(nextMeeting.start?.dateTime || nextMeeting.start?.date)
+                const start = new Date(nextMeeting.start?.dateTime || nextMeeting.start?.date || '')
                 const today = new Date()
                 const tomorrow = new Date(today)
                 tomorrow.setDate(tomorrow.getDate() + 1)
@@ -560,7 +564,7 @@ function MeetingContent() {
                 const hasAnyDiscuss = allObjData.some(d => d.withDiscuss.length > 0)
                 const hasAnyNonDiscuss = allObjData.some(d => d.withoutDiscuss.length > 0)
 
-                const renderSubCard = (sub: MeetSub, subIdx: number, c: any, isDiscuss: boolean) => {
+                const renderSubCard = (sub: MeetSub, subIdx: number, c: Checkin | null | undefined, isDiscuss: boolean) => {
                   const statusCfg = c ? STATUS_CONFIG[c.status as StatusKey] : null
                   const lc = lastWeekCheckins[sub.id]
                   const lastCfg = c && lc && lc.status !== c.status ? STATUS_CONFIG[lc.status as StatusKey] : null
@@ -764,7 +768,7 @@ function MeetingContent() {
                               key={att.id}
                               onClick={async () => {
                                 if (att.type === 'link') {
-                                  window.open(att.url, '_blank')
+                                  if (att.url) window.open(att.url, '_blank')
                                 } else if (att.file_path) {
                                   const { data } = await supabase.storage
                                     .from('meeting-files')

@@ -19,6 +19,9 @@ type AdminObj = { id: string; title: string; is_active?: boolean | null; sort_or
 type AdminUser = { id: string; full_name?: string | null; email: string; role?: string | null; strategic_objectives?: AdminObj[] | null }
 type PendingSubObj = { id: string; title: string; sort_order?: number | null }
 type PendingObjective = { id: string; pending_user_email: string; title: string; target_date?: string | null; sort_order?: number | null; created_at?: string | null; pending_sub_objectives?: PendingSubObj[] | null }
+type PendingUser = Database['public']['Tables']['pending_users']['Row']
+// bug_reports row joined to the reporter's name for display
+type BugReport = Database['public']['Tables']['bug_reports']['Row'] & { users?: { full_name: string | null } | null }
 
 export default function AdminPage() {
   const router = useRouter()
@@ -35,9 +38,9 @@ export default function AdminPage() {
   const [editingObjs, setEditingObjs] = useState<EditObjState>({})
   const [pendingEmail, setPendingEmail] = useState('')
   const [pendingName, setPendingName] = useState('')
-  const [pendingUsers, setPendingUsers] = useState<any[]>([])
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([])
   const [pendingObjectives, setPendingObjectives] = useState<PendingObjective[]>([])
-  const [bugReports, setBugReports] = useState<any[]>([])
+  const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [expandedPending, setExpandedPending] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export default function AdminPage() {
     const { data: pObjs } = await supabase.from('pending_objectives').select('*, pending_sub_objectives(*)').order('created_at')
     setPendingObjectives((pObjs || []) as unknown as PendingObjective[])
     const { data: bugs } = await supabase.from('bug_reports').select('*, users(full_name, email)').order('created_at', { ascending: false })
-    setBugReports(bugs || [])
+    setBugReports((bugs || []) as unknown as BugReport[])
     setLoading(false)
   }
 
@@ -609,7 +612,7 @@ export default function AdminPage() {
                           {bug.status}
                         </span>
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {new Date(bug.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          {bug.created_at && new Date(bug.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                         </span>
                       </div>
                       <div className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
@@ -621,6 +624,7 @@ export default function AdminPage() {
                       {bug.screenshot_path && (
                         <button
                           onClick={async () => {
+                            if (!bug.screenshot_path) return
                             const { data } = await supabase.storage.from('bug-screenshots').createSignedUrl(bug.screenshot_path, 7200)
                             if (data?.signedUrl) window.open(data.signedUrl, '_blank')
                           }}

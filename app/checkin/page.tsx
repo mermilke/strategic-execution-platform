@@ -9,6 +9,8 @@ import type { User } from '@supabase/supabase-js'
 import type { Database } from '../../lib/database.types'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
+type ObjectiveOpportunity = Database['public']['Tables']['objective_opportunities']['Row']
+type MeetingAttachment = Database['public']['Tables']['meeting_attachments']['Row']
 
 type CheckinSub = {
   id: string
@@ -23,7 +25,7 @@ type CheckinObj = {
   title: string
   opportunity_target?: number | null
   sub_objectives?: CheckinSub[] | null
-  objective_opportunities?: any[] | null
+  objective_opportunities?: ObjectiveOpportunity[] | null
 }
 
 const toLetter = (i: number) => String.fromCharCode(65 + i)
@@ -68,7 +70,7 @@ function CheckinForm() {
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showComment, setShowComment] = useState<Record<string, boolean>>({})
-  const [attachments, setAttachments] = useState<any[]>([])
+  const [attachments, setAttachments] = useState<MeetingAttachment[]>([])
   const [uploading, setUploading] = useState(false)
   const [linkForm, setLinkForm] = useState({ show: false, name: '', url: '' })
   const fileInputRef = useRef<HTMLInputElement | null>(null)
