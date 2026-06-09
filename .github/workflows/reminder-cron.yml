@@ -2,25 +2,31 @@ name: Daily reminder emails
 
 # Pings /api/cron/reminders so each region's direct reports get the email at
 # exactly 4pm in their own local time. The endpoint matches a DR only when
-# their local hour is 16, so we fire at multiple UTC times to cover each
-# timezone × DST combination. reminder_log dedupes per-week.
+# their local hour is 16, so we fire at the UTC times that hit 4pm across the
+# seed's timezones × DST. reminder_log dedupes per-week.
 #
-# UTC times → 4pm local in:
-#   08:00 → Shanghai (UTC+8)
-#   09:00 → Bangkok  (UTC+7)
-#   14:00 → Berlin CEST summer (UTC+2)
-#   15:00 → Berlin CET winter  (UTC+1)
-#   21:00 → Chicago CDT summer (UTC-5)
-#   22:00 → Chicago CST winter (UTC-6) AND Mexico City year-round (UTC-6)
+# UTC times → 4pm local in (the seed's timezones):
+#   07:00 → Tokyo (UTC+9)
+#   08:00 → Singapore (UTC+8)
+#   10:30 → Kolkata (UTC+5:30)
+#   14:00 → Berlin summer CEST (UTC+2)
+#   15:00 → Berlin winter CET (UTC+1) AND London summer BST (UTC+1)
+#   16:00 → London winter GMT (UTC+0)
+#   20:00 → New York summer EDT (UTC-4)
+#   21:00 → New York winter EST (UTC-5) AND Chicago summer CDT (UTC-5)
+#   22:00 → Chicago winter CST (UTC-6) AND Mexico City year-round (UTC-6)
 
 on:
   schedule:
-    - cron: '0 8  * * 1-5'
-    - cron: '0 9  * * 1-5'
-    - cron: '0 14 * * 1-5'
-    - cron: '0 15 * * 1-5'
-    - cron: '0 21 * * 1-5'
-    - cron: '0 22 * * 1-5'
+    - cron: '0 7   * * 1-5'
+    - cron: '0 8   * * 1-5'
+    - cron: '30 10 * * 1-5'
+    - cron: '0 14  * * 1-5'
+    - cron: '0 15  * * 1-5'
+    - cron: '0 16  * * 1-5'
+    - cron: '0 20  * * 1-5'
+    - cron: '0 21  * * 1-5'
+    - cron: '0 22  * * 1-5'
   workflow_dispatch:
     inputs:
       test_email:
