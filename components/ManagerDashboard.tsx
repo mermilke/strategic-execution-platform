@@ -100,24 +100,34 @@ export default function ManagerDashboard({ currentUser }: {
 
     if (!users) { setLoading(false); return }
 
-    // pull objectives + subs + checkins per user for the selected week
-    const enriched = await Promise.all(users.map(async (u) => {
-      const { data: objectives } = await supabase
-        .from('strategic_objectives')
-        .select(`
+    // Pull every report's objectives + subs + checkins in one query, then group
+    // by owner in memory. Previously this ran a query per report on every 60s
+    // refresh (an N+1); now it's a single owner_id IN (...) read.
+    const userIds = users.map(u => u.id)
+    const { data: allObjectives } = await supabase
+      .from('strategic_objectives')
+      .select(`
+        *,
+        sub_objectives (
           *,
-          sub_objectives (
-            *,
-            weekly_checkins (*)
-          ),
-          objective_opportunities (*)
-        `)
-        .eq('owner_id', u.id)
-        .eq('is_active', true)
-        .order('sort_order')
-        .order('created_at')
+          weekly_checkins (*)
+        ),
+        objective_opportunities (*)
+      `)
+      .in('owner_id', userIds)
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('created_at')
 
-      const objWithCheckins = (objectives || []).map(obj => ({
+    const objectivesByOwner = new Map<string, NonNullable<typeof allObjectives>>()
+    for (const obj of allObjectives || []) {
+      const arr = objectivesByOwner.get(obj.owner_id) || []
+      arr.push(obj)
+      objectivesByOwner.set(obj.owner_id, arr)
+    }
+
+    const enriched = users.map((u) => {
+      const objWithCheckins = (objectivesByOwner.get(u.id) || []).map(obj => ({
         ...obj,
         sub_objectives: (obj.sub_objectives || [])
           .filter(s => s.is_active)
@@ -139,7 +149,7 @@ export default function ManagerDashboard({ currentUser }: {
       const needsSupport = allCheckins.filter(c => c.support_needed && c.support_needed.trim()).length
 
       return { ...u, objectives: objWithCheckins, totalSubs, submitted, atRisk, offTrack, onHold, notStarted, needsSupport }
-    }))
+    })
 
     setData(enriched as unknown as DashUser[])
     setLoading(false)
