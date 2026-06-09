@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { supabase } from '../../lib/supabase'
 import IBtn from './IBtn'
@@ -7,6 +7,7 @@ import AddSubInline from './AddSubInline'
 import ArchivedSubsToggle from './ArchivedSubsToggle'
 import DraggableSubList from './DraggableSubList'
 import DragGrip from './DragGrip'
+import { useReorder, srOnlyStyle } from '../../lib/useReorder'
 import { toLetter, fmtDate } from '../../lib/utils'
 
 type SubObjective = {
@@ -46,17 +47,8 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
   reorderSub: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   onSave: () => void | Promise<void>
 }) {
-  const dragItem = useRef<number | null>(null)
-  const dragOverItem = useRef<number | null>(null)
   const [editingSubsForObj, setEditingSubsForObj] = useState<EditSubState>({}) // { [objId]: { [subId]: title } }
-
-  function handleDragStart(index: number) { dragItem.current = index }
-  function handleDragEnter(index: number) { dragOverItem.current = index }
-  async function handleDragEnd(objId: string) {
-    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
-    await reorderObj(userId, objId, dragOverItem.current, dragItem.current)
-    dragItem.current = null; dragOverItem.current = null
-  }
+  const { onDragStart, onDragEnter, onDragEnd, move, announcement, setGripRef } = useReorder(userId, objs.length, reorderObj, 'objective')
 
   function startEditObj(obj: Objective) {
     setEditingObjs(prev => ({ ...prev, [obj.id]: { title: obj.title, short_title: obj.short_title || '', target_date: obj.target_date } }))
@@ -91,6 +83,7 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
 
   return (
     <div className="space-y-3">
+      <div role="status" aria-live="polite" style={srOnlyStyle}>{announcement}</div>
       {objs.map((obj, objIdx) => {
         const isEditing = editingObjs?.[obj.id] !== undefined
         const activeSubs = (obj.sub_objectives || []).filter(s => s.is_active).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.created_at || '').localeCompare(b.created_at || ''))
@@ -99,15 +92,19 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
         return (
           <div key={obj.id}
             draggable
-            onDragStart={() => handleDragStart(objIdx)}
-            onDragEnter={() => handleDragEnter(objIdx)}
-            onDragEnd={() => handleDragEnd(obj.id)}
+            onDragStart={e => onDragStart(e, objIdx)}
+            onDragEnter={() => onDragEnter(objIdx)}
+            onDragEnd={e => onDragEnd(e, obj.id)}
             onDragOver={e => e.preventDefault()}
             className="rounded-lg"
             style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', cursor: 'grab' }}>
 
             <div className="flex items-center gap-2 p-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <DragGrip variant="obj" />
+              <DragGrip variant="obj"
+                ref={setGripRef(obj.id)}
+                label={`Reorder objective ${objIdx + 1} of ${objs.length}`}
+                onMoveUp={() => move(objIdx, obj.id, obj.title, -1)}
+                onMoveDown={() => move(objIdx, obj.id, obj.title, 1)} />
 
               <span className="text-base mr-1">🎯</span>
 

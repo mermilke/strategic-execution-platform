@@ -48,4 +48,20 @@ describe('DraggableSubList', () => {
     fireEvent.dragEnd(rows[1])
     expect(reorder).not.toHaveBeenCalled()
   })
+
+  it('reorders by keyboard and announces the move', () => {
+    const reorder = vi.fn()
+    render(<DraggableSubList subs={subs} objId="o1" reorder={reorder} />)
+    fireEvent.keyDown(screen.getByRole('button', { name: /Reorder sub-objective A/ }), { key: 'ArrowDown' })
+    expect(reorder).toHaveBeenCalledWith('o1', 's1', 1, 0)
+    expect(screen.getByRole('status')).toHaveTextContent('Moved sub-objective "First sub" to position 2 of 3.')
+  })
+
+  it('does not move the first row up or the last row down', () => {
+    const reorder = vi.fn()
+    render(<DraggableSubList subs={subs} objId="o1" reorder={reorder} />)
+    fireEvent.keyDown(screen.getByRole('button', { name: /Reorder sub-objective A/ }), { key: 'ArrowUp' })
+    fireEvent.keyDown(screen.getByRole('button', { name: /Reorder sub-objective C/ }), { key: 'ArrowDown' })
+    expect(reorder).not.toHaveBeenCalled()
+  })
 })

@@ -1,10 +1,11 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import IBtn from './IBtn'
 import AddSubInline from './AddSubInline'
 import DraggableSubList from './DraggableSubList'
 import DragGrip from './DragGrip'
+import { useReorder, srOnlyStyle } from '../../lib/useReorder'
 import { toLetter, fmtDate } from '../../lib/utils'
 
 type PendingSub = { id: string; title: string; sort_order?: number | null }
@@ -28,18 +29,9 @@ export default function DraggablePendingObjList({ objs, email, deletePendingObj,
   reorderPendingSub: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   onSave: () => void | Promise<void>
 }) {
-  const dragItem = useRef<number | null>(null)
-  const dragOverItem = useRef<number | null>(null)
   const [editingObjs, setEditingObjs] = useState<Record<string, { title: string; target_date?: string | null }>>({})
   const [editingSubsForObj, setEditingSubsForObj] = useState<Record<string, Record<string, string>>>({})
-
-  function handleDragStart(index: number) { dragItem.current = index }
-  function handleDragEnter(index: number) { dragOverItem.current = index }
-  async function handleDragEnd(objId: string) {
-    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
-    await reorderPendingObj(email, objId, dragOverItem.current, dragItem.current)
-    dragItem.current = null; dragOverItem.current = null
-  }
+  const { onDragStart, onDragEnter, onDragEnd, move, announcement, setGripRef } = useReorder(email, objs.length, reorderPendingObj, 'objective')
 
   function startEditObj(obj: PendingObj) {
     setEditingObjs(prev => ({ ...prev, [obj.id]: { title: obj.title, target_date: obj.target_date } }))
@@ -69,6 +61,7 @@ export default function DraggablePendingObjList({ objs, email, deletePendingObj,
 
   return (
     <div className="space-y-3">
+      <div role="status" aria-live="polite" style={srOnlyStyle}>{announcement}</div>
       {objs.map((obj, objIdx) => {
         const isEditing = editingObjs?.[obj.id] !== undefined
         const subs = (obj.pending_sub_objectives || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
@@ -76,15 +69,19 @@ export default function DraggablePendingObjList({ objs, email, deletePendingObj,
         return (
           <div key={obj.id}
             draggable
-            onDragStart={() => handleDragStart(objIdx)}
-            onDragEnter={() => handleDragEnter(objIdx)}
-            onDragEnd={() => handleDragEnd(obj.id)}
+            onDragStart={e => onDragStart(e, objIdx)}
+            onDragEnter={() => onDragEnter(objIdx)}
+            onDragEnd={e => onDragEnd(e, obj.id)}
             onDragOver={e => e.preventDefault()}
             className="rounded-lg"
             style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', cursor: 'grab' }}>
 
             <div className="flex items-center gap-2 p-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <DragGrip variant="obj" />
+              <DragGrip variant="obj"
+                ref={setGripRef(obj.id)}
+                label={`Reorder objective ${objIdx + 1} of ${objs.length}`}
+                onMoveUp={() => move(objIdx, obj.id, obj.title, -1)}
+                onMoveDown={() => move(objIdx, obj.id, obj.title, 1)} />
 
               <span className="text-base mr-1">🎯</span>
 

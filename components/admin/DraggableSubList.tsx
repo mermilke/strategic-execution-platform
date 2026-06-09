@@ -1,7 +1,6 @@
 'use client'
-import { useRef } from 'react'
-import type { DragEvent } from 'react'
 import DragGrip from './DragGrip'
+import { useReorder, srOnlyStyle } from '../../lib/useReorder'
 import { toLetter, fmtDate } from '../../lib/utils'
 
 type SubRow = {
@@ -22,31 +21,26 @@ export default function DraggableSubList({ subs, objId, reorder, showMeta = fals
   reorder: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   showMeta?: boolean
 }) {
-  const dragItem = useRef<number | null>(null)
-  const dragOverItem = useRef<number | null>(null)
-
-  function handleDragStart(e: DragEvent, index: number) { e.stopPropagation(); dragItem.current = index }
-  function handleDragEnter(index: number) { dragOverItem.current = index }
-  async function handleDragEnd(e: DragEvent, subId: string) {
-    e.stopPropagation()
-    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) return
-    await reorder(objId, subId, dragOverItem.current, dragItem.current)
-    dragItem.current = null; dragOverItem.current = null
-  }
+  const { onDragStart, onDragEnter, onDragEnd, move, announcement, setGripRef } = useReorder(objId, subs.length, reorder, 'sub-objective', true)
 
   return (
     <>
+      <div role="status" aria-live="polite" style={srOnlyStyle}>{announcement}</div>
       {subs.map((sub, subIdx) => (
         <div key={sub.id}
           draggable
-          onDragStart={e => handleDragStart(e, subIdx)}
-          onDragEnter={() => handleDragEnter(subIdx)}
-          onDragEnd={e => handleDragEnd(e, sub.id)}
+          onDragStart={e => onDragStart(e, subIdx)}
+          onDragEnter={() => onDragEnter(subIdx)}
+          onDragEnd={e => onDragEnd(e, sub.id)}
           onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
           className="flex items-center gap-2 px-3 py-2 rounded-lg"
           style={{ background: 'var(--bg-elevated)', cursor: 'grab' }}>
 
-          <DragGrip variant="sub" />
+          <DragGrip variant="sub"
+            ref={setGripRef(sub.id)}
+            label={`Reorder sub-objective ${toLetter(subIdx)}, position ${subIdx + 1} of ${subs.length}`}
+            onMoveUp={() => move(subIdx, sub.id, sub.title, -1)}
+            onMoveDown={() => move(subIdx, sub.id, sub.title, 1)} />
 
           <span className="flex-shrink-0" style={{ fontSize: 13 }}>📌</span>
           <span className="flex-1 text-xs text-slate-600">
