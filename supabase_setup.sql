@@ -305,6 +305,10 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
+-- handle_new_user is a trigger function (fires on auth.users insert regardless
+-- of EXECUTE grants), so keep it off the exposed PostgREST RPC surface.
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+
 -- 1:1 meeting notes (collaborative, real-time).
 CREATE TABLE IF NOT EXISTS meeting_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
