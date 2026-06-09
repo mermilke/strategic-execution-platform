@@ -1,10 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import SnapshotTiles from './SnapshotTiles'
+import type { DashUser } from './types'
 
 const weekOptions = ['2026-06-01']
 const selectedWeek = '2026-06-01'
 
+// A deliberately minimal fixture; cast to the full row type the component expects.
 const data = [
   {
     id: 'u1',
@@ -20,7 +22,7 @@ const data = [
       },
     ],
   },
-]
+] as unknown as DashUser[]
 
 describe('SnapshotTiles', () => {
   it('renders a tile per report with its objective title', () => {

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import DirectReportCard from './DirectReportCard'
+import type { DashUser } from './types'
 
 const weekOptions = ['2026-06-01']
 const selectedWeek = '2026-06-01'
 
+// A deliberately minimal fixture; cast to the full row type the component expects.
 const user = {
   id: 'u1',
   full_name: 'Dana Whitfield',
@@ -23,12 +25,12 @@ const user = {
       ],
     },
   ],
-}
+} as unknown as DashUser
 
 function setup(overrides = {}) {
   const props = {
     u: user,
-    expandedUsers: new Set(),
+    expandedUsers: new Set<string>(),
     setExpandedUsers: vi.fn(),
     router: { push: vi.fn() },
     filterStatus: 'all',

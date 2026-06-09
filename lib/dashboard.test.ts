@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { calcWeeksNoProgress } from './dashboard.js'
+import { calcWeeksNoProgress } from './dashboard'
 
 const weeks = ['2026-01-05', '2026-01-12', '2026-01-19']
 const last = '2026-01-19'
 
-const sub = (checkins) => ({ weekly_checkins: checkins })
+const sub = (checkins: any[]) => ({ weekly_checkins: checkins })
 
 describe('calcWeeksNoProgress', () => {
   it('counts every week back when there are no check-ins', () => {

@@ -4,28 +4,31 @@
 // the suite follows whatever ports the local stack is on.
 
 import { execSync } from 'node:child_process'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const PASSWORD = 'test-password-123'
 
-let cachedConfig = null
+type Config = { url: string; anonKey: string; serviceKey: string }
+export type TestUser = { id: string; email: string }
+
+let cachedConfig: Config | null = null
 
 // Read API URL + keys from the running local stack. Memoized so we only shell
 // out once per worker.
-function config() {
+function config(): Config {
   if (cachedConfig) return cachedConfig
 
-  let out
+  let out: string
   try {
     out = execSync('npx supabase status -o env', { encoding: 'utf8' })
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(
       'Could not read the local Supabase status. Start the stack first with: npx supabase start\n' +
         (err.stderr || err.message || '')
     )
   }
 
-  const read = (key) => {
+  const read = (key: string): string | null => {
     const match = out.match(new RegExp(`^${key}="?([^"\\n]+)"?`, 'm'))
     return match ? match[1] : null
   }
@@ -42,7 +45,7 @@ function config() {
 }
 
 // Service-role client: bypasses RLS. Used only to build fixtures and clean up.
-export function adminClient() {
+export function adminClient(): SupabaseClient {
   const { url, serviceKey } = config()
   return createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -50,7 +53,7 @@ export function adminClient() {
 }
 
 // Anonymous client, signed in below to carry a specific user's JWT so RLS applies.
-function anonClient() {
+function anonClient(): SupabaseClient {
   const { url, anonKey } = config()
   return createClient(url, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -59,7 +62,7 @@ function anonClient() {
 
 // Delete every auth user. The users.id -> auth.users FK cascades, which wipes
 // the public.users row and everything that user owns, so each run starts clean.
-export async function resetDb(admin) {
+export async function resetDb(admin: SupabaseClient): Promise<void> {
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
   if (error) throw error
   for (const user of data.users) {
@@ -71,7 +74,7 @@ let userCounter = 0
 
 // Create an auth user with a role. The on_auth_user_created trigger reads the
 // role out of user_metadata and inserts the matching public.users row.
-export async function createUser(admin, role, fullName) {
+export async function createUser(admin: SupabaseClient, role: string, fullName?: string): Promise<TestUser> {
   userCounter += 1
   const email = `rls-${role}-${userCounter}@example.test`
   const { data, error } = await admin.auth.admin.createUser({
@@ -86,7 +89,7 @@ export async function createUser(admin, role, fullName) {
 
 // Returns a client authenticated as the given user; its requests carry that
 // user's JWT, so the database applies RLS as that user.
-export async function signInAs(email) {
+export async function signInAs(email: string): Promise<SupabaseClient> {
   const client = anonClient()
   const { error } = await client.auth.signInWithPassword({ email, password: PASSWORD })
   if (error) throw error

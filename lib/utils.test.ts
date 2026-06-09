@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, oauthExpiresAt } from './utils.js'
+import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, oauthExpiresAt } from './utils'
+import type { StatusKey } from './utils'
 
-const dayOf = (yyyymmdd) => new Date(yyyymmdd + 'T00:00:00').getDay()
+const dayOf = (yyyymmdd: string) => new Date(yyyymmdd + 'T00:00:00').getDay()
 
 describe('week helpers', () => {
   it('getCurrentWeekStart lands on a Monday', () => {
@@ -11,7 +12,7 @@ describe('week helpers', () => {
   it('getLastWeekStart is exactly seven days before this week', () => {
     const cur = new Date(getCurrentWeekStart() + 'T00:00:00Z')
     const last = new Date(getLastWeekStart() + 'T00:00:00Z')
-    expect((cur - last) / 86_400_000).toBe(7)
+    expect((cur.getTime() - last.getTime()) / 86_400_000).toBe(7)
   })
 
   it('formatWeekLabel reads like a date a person would write', () => {
@@ -20,7 +21,7 @@ describe('week helpers', () => {
 })
 
 describe('STATUS_CONFIG', () => {
-  const statuses = ['on_track', 'at_risk', 'off_track', 'on_hold', 'not_started', 'completed']
+  const statuses: StatusKey[] = ['on_track', 'at_risk', 'off_track', 'on_hold', 'not_started', 'completed']
 
   it('has an entry for every check-in status', () => {
     for (const s of statuses) {

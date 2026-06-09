@@ -5,22 +5,24 @@ import DragGrip from './DragGrip'
 describe('DragGrip', () => {
   it('renders three handle bars', () => {
     const { container } = render(<DragGrip />)
-    const grip = container.firstChild
+    const grip = container.firstChild as HTMLElement
     expect(grip.childNodes).toHaveLength(3)
   })
 
   it('uses a narrower bar for the sub variant than the obj variant', () => {
     const { container: obj } = render(<DragGrip variant="obj" />)
     const { container: sub } = render(<DragGrip variant="sub" />)
-    const objBar = obj.firstChild.firstChild
-    const subBar = sub.firstChild.firstChild
+    const objBar = obj.firstChild!.firstChild as HTMLElement
+    const subBar = sub.firstChild!.firstChild as HTMLElement
     expect(objBar.style.width).toBe('16px')
     expect(subBar.style.width).toBe('12px')
   })
 
   it('falls back to the obj variant for an unknown variant', () => {
+    // @ts-expect-error intentionally passing an unknown variant to test the fallback
     const { container } = render(<DragGrip variant="nope" />)
-    expect(container.firstChild.firstChild.style.width).toBe('16px')
+    const bar = container.firstChild!.firstChild as HTMLElement
+    expect(bar.style.width).toBe('16px')
   })
 
   it('is a button exposing its label to assistive tech', () => {

@@ -32,7 +32,7 @@ describe('DraggableSubList', () => {
   it('reorders by passing new and old indexes on drop', () => {
     const reorder = vi.fn()
     render(<DraggableSubList subs={subs} objId="o1" reorder={reorder} />)
-    const rows = screen.getAllByText(/sub$/).map(el => el.closest('[draggable]'))
+    const rows = screen.getAllByText(/sub$/).map(el => el.closest('[draggable]')!)
     fireEvent.dragStart(rows[0])
     fireEvent.dragEnter(rows[2])
     fireEvent.dragEnd(rows[0])
@@ -42,7 +42,7 @@ describe('DraggableSubList', () => {
   it('does not reorder when the row is dropped onto itself', () => {
     const reorder = vi.fn()
     render(<DraggableSubList subs={subs} objId="o1" reorder={reorder} />)
-    const rows = screen.getAllByText(/sub$/).map(el => el.closest('[draggable]'))
+    const rows = screen.getAllByText(/sub$/).map(el => el.closest('[draggable]')!)
     fireEvent.dragStart(rows[1])
     fireEvent.dragEnter(rows[1])
     fireEvent.dragEnd(rows[1])

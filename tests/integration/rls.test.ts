@@ -6,14 +6,16 @@
 // Run with: npm run test:integration (requires `npx supabase start` first).
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { adminClient, resetDb, createUser, signInAs } from './helpers'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { adminClient, resetDb, createUser, signInAs, type TestUser } from './helpers'
 
 const WEEK = '2026-06-01'
 
-let admin
-let manager, dr1, dr2
-let obj1, sub1, obj2, sub2
-let managerClient, drClient1, drClient2
+let admin: SupabaseClient
+let manager: TestUser, dr1: TestUser, dr2: TestUser
+// Fixture rows are read back from the service-role client, which carries no schema generic.
+let obj1: any, sub1: any, obj2: any, sub2: any
+let managerClient: SupabaseClient, drClient1: SupabaseClient, drClient2: SupabaseClient
 
 beforeAll(async () => {
   admin = adminClient()
@@ -52,13 +54,13 @@ describe('strategic_objectives RLS', () => {
   it('a manager sees every objective', async () => {
     const { data, error } = await managerClient.from('strategic_objectives').select('id')
     expect(error).toBeNull()
-    expect(data.map((o) => o.id).sort()).toEqual([obj1.id, obj2.id].sort())
+    expect(data!.map((o: any) => o.id).sort()).toEqual([obj1.id, obj2.id].sort())
   })
 
   it('a direct report sees only objectives they own', async () => {
     const { data, error } = await drClient1.from('strategic_objectives').select('id')
     expect(error).toBeNull()
-    expect(data.map((o) => o.id)).toEqual([obj1.id])
+    expect(data!.map((o: any) => o.id)).toEqual([obj1.id])
   })
 })
 
@@ -66,7 +68,7 @@ describe('sub_objectives RLS', () => {
   it('a direct report sees only sub-objectives under their own objectives', async () => {
     const { data, error } = await drClient1.from('sub_objectives').select('id')
     expect(error).toBeNull()
-    expect(data.map((s) => s.id)).toEqual([sub1.id])
+    expect(data!.map((s: any) => s.id)).toEqual([sub1.id])
   })
 })
 
@@ -81,7 +83,7 @@ describe('weekly_checkins RLS', () => {
     const { data, error } = await drClient1.from('weekly_checkins').select('id, submitted_by')
     expect(error).toBeNull()
     expect(data).toHaveLength(1)
-    expect(data.every((c) => c.submitted_by === dr1.id)).toBe(true)
+    expect(data!.every((c: any) => c.submitted_by === dr1.id)).toBe(true)
   })
 
   it('a report cannot submit a check-in attributed to another user', async () => {
@@ -117,7 +119,7 @@ describe('users RLS', () => {
     const { data, error } = await drClient1.from('users').select('id')
     expect(error).toBeNull()
     expect(data).toHaveLength(1)
-    expect(data[0].id).toBe(dr1.id)
+    expect(data![0].id).toBe(dr1.id)
   })
 
   it('a direct report cannot promote themselves to admin', async () => {
@@ -125,13 +127,13 @@ describe('users RLS', () => {
     expect(error).not.toBeNull()
     // confirm the role really did not change, read back with the service role
     const { data } = await admin.from('users').select('role').eq('id', dr1.id).single()
-    expect(data.role).toBe('direct_report')
+    expect(data!.role).toBe('direct_report')
   })
 
   it('a direct report can still update a non-role field on their own row', async () => {
     const { error } = await drClient1.from('users').update({ full_name: 'Report One Renamed' }).eq('id', dr1.id)
     expect(error).toBeNull()
     const { data } = await admin.from('users').select('full_name').eq('id', dr1.id).single()
-    expect(data.full_name).toBe('Report One Renamed')
+    expect(data!.full_name).toBe('Report One Renamed')
   })
 })

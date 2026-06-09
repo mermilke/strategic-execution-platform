@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { previousMonday } from './briefing-context.js'
+import { previousMonday } from './briefing-context'
 
 describe('previousMonday', () => {
   it('steps back exactly one week', () => {
