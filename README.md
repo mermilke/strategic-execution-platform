@@ -234,8 +234,9 @@ Supabase Postgres, exercising the RLS policies as real signed-in users:
 npm run test:integration   # needs Docker + `npx supabase start`
 ```
 
-GitHub Actions type-checks, runs the unit tests, and does a production build on
-every push and pull request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+GitHub Actions type-checks, verifies `supabase_setup.sql` is in sync with the
+migrations, runs the unit tests, and does a production build on every push and
+pull request (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Deploying
 
