@@ -35,9 +35,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Node 22 here (not 20 like the build job): supabase-js needs a global
+      # WebSocket to construct its client, which Node ships from 22 on.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       # Starts the Dockerized stack and applies supabase/migrations to it. The
