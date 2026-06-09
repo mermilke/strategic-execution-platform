@@ -42,7 +42,7 @@ beforeAll(async () => {
   managerClient = await signInAs(manager.email)
   drClient1 = await signInAs(dr1.email)
   drClient2 = await signInAs(dr2.email)
-}, 60000)
+}, 120000)
 
 afterAll(async () => {
   if (admin) await resetDb(admin)
@@ -107,9 +107,31 @@ describe('weekly_checkins RLS', () => {
 })
 
 describe('users RLS', () => {
-  it('any authenticated user can read the user directory (the manager dashboard needs it)', async () => {
-    const { data, error } = await drClient1.from('users').select('id')
+  it('a manager reads the whole team (the dashboard needs it)', async () => {
+    const { data, error } = await managerClient.from('users').select('id')
     expect(error).toBeNull()
     expect(data).toHaveLength(3)
+  })
+
+  it('a direct report reads only their own row, not the rest of the team', async () => {
+    const { data, error } = await drClient1.from('users').select('id')
+    expect(error).toBeNull()
+    expect(data).toHaveLength(1)
+    expect(data[0].id).toBe(dr1.id)
+  })
+
+  it('a direct report cannot promote themselves to admin', async () => {
+    const { error } = await drClient1.from('users').update({ role: 'admin' }).eq('id', dr1.id)
+    expect(error).not.toBeNull()
+    // confirm the role really did not change, read back with the service role
+    const { data } = await admin.from('users').select('role').eq('id', dr1.id).single()
+    expect(data.role).toBe('direct_report')
+  })
+
+  it('a direct report can still update a non-role field on their own row', async () => {
+    const { error } = await drClient1.from('users').update({ full_name: 'Report One Renamed' }).eq('id', dr1.id)
+    expect(error).toBeNull()
+    const { data } = await admin.from('users').select('full_name').eq('id', dr1.id).single()
+    expect(data.full_name).toBe('Report One Renamed')
   })
 })

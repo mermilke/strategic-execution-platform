@@ -69,9 +69,55 @@ ALTER TABLE sub_objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_reminders ENABLE ROW LEVEL SECURITY;
 
--- Users: everyone can read all users (needed for manager dashboard)
-CREATE POLICY "users_select_all" ON users FOR SELECT USING (true);
-CREATE POLICY "users_update_own" ON users FOR UPDATE USING (auth.uid() = id);
+-- Helper: is the caller a manager or admin? SECURITY DEFINER so it can be used
+-- inside the users policy below without the policy recursively evaluating itself
+-- (a SELECT policy on users that queries users would otherwise loop).
+CREATE OR REPLACE FUNCTION public.is_manager_or_admin()
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('manager', 'admin')
+  );
+$$;
+
+-- Users: a user reads their own row; managers and admins read the whole team
+-- (the dashboard needs it). This stops one report from reading everyone else's
+-- email address.
+DROP POLICY IF EXISTS "users_select_all" ON users;
+DROP POLICY IF EXISTS "users_select" ON users;
+CREATE POLICY "users_select" ON users FOR SELECT USING (
+  id = auth.uid() OR public.is_manager_or_admin()
+);
+
+-- A user may update their own row, but the role column is guarded by the trigger
+-- below so a report can't promote themselves to admin.
+DROP POLICY IF EXISTS "users_update_own" ON users;
+CREATE POLICY "users_update_own" ON users FOR UPDATE
+  USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Block self-service role changes. A service-role/SQL context (auth.uid() IS
+-- NULL, e.g. the Supabase Table Editor) and existing managers/admins are
+-- unaffected, so the documented "set a user's role in the Table Editor" flow
+-- still works.
+CREATE OR REPLACE FUNCTION public.enforce_user_role_guard()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role
+     AND auth.uid() IS NOT NULL
+     AND NOT public.is_manager_or_admin() THEN
+    RAISE EXCEPTION 'Only an admin can change a user role';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS users_role_guard ON public.users;
+CREATE TRIGGER users_role_guard
+  BEFORE UPDATE ON public.users
+  FOR EACH ROW EXECUTE PROCEDURE public.enforce_user_role_guard();
 
 -- Objectives: manager/admin can see all; direct reports see their own
 CREATE POLICY "objectives_select" ON strategic_objectives FOR SELECT USING (
