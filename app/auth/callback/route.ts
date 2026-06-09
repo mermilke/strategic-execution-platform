@@ -6,7 +6,12 @@ import type { Database } from '../../../lib/database.types'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') || '/dashboard'
+  const nextParam = searchParams.get('next') || '/dashboard'
+  // Only follow a same-origin path (single leading slash). Without this, a
+  // ?next=//evil.com or an absolute URL could turn the callback into an open
+  // redirect; concatenating origin happens to defang it, but validate rather
+  // than rely on that.
+  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/dashboard'
 
   // Supabase sometimes sends errors back as query params, catch those
   const errorParam = searchParams.get('error')
