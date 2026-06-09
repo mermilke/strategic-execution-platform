@@ -4,11 +4,16 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { oauthExpiresAt } from './utils'
+import { isOneOnOneSubject } from './calendar-match'
 
 type Admin = SupabaseClient<Database>
 
 // Shared mailbox the briefing reads upcoming 1:1s from (the manager running them).
 const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
+
+// Manager running the 1:1s, used to recognize their 1:1s on the calendar.
+const MANAGER_NAME = process.env.MANAGER_NAME || 'the manager'
+const MANAGER_FIRST = MANAGER_NAME.split(' ')[0]
 
 /** YYYY-MM-DD of the Monday before `weekStart`. */
 export function previousMonday(weekStart: string): string {
@@ -142,8 +147,9 @@ function fmtMeetingLabel(iso: string | null | undefined): string | null {
 type Meeting = { label: string | null; subject?: string | null; is_cancelled: boolean }
 type MeetingsForDR = { next_confirmed: Meeting | null; all_meetings: Meeting[] }
 
-// All meetings (live + cancelled) over the next 14 days whose subject mentions
-// this DR's first name, plus a derived "next confirmed" slot.
+// This DR's 1:1s (live + cancelled) over the next 14 days, plus a derived "next
+// confirmed" slot. Uses the same 1:1 matcher as the reminder cron so a plain
+// meeting that merely mentions the name isn't mistaken for their 1:1.
 //   {
 //     next_confirmed: { label, subject } | null,    // first non-cancelled
 //     all_meetings:   [{ label, is_cancelled }, …]  // ordered by start
@@ -152,9 +158,9 @@ function findMeetingsForDR(events: GraphEvent[] | null | undefined, drFullName: 
   if (!events?.length || !drFullName) {
     return { next_confirmed: null, all_meetings: [] }
   }
-  const first = drFullName.split(/\s+/)[0].toLowerCase()
+  const first = drFullName.split(/\s+/)[0]
   const matches: Meeting[] = events
-    .filter(e => (e.subject || '').toLowerCase().includes(first))
+    .filter(e => isOneOnOneSubject(e.subject, first, MANAGER_FIRST))
     .map(e => ({
       label: fmtMeetingLabel(e.start?.dateTime),
       subject: e.subject,
@@ -169,6 +175,16 @@ function findMeetingsForDR(events: GraphEvent[] | null | undefined, drFullName: 
 export async function buildBriefingContext(weekStart: string) {
   const admin = newAdminClient()
   const lastWeek = previousMonday(weekStart)
+
+  // Only the most recent note per direct report ends up in the briefing, and
+  // meeting_notes grows by a row per person per week forever, so bound the pull
+  // to the last year instead of reading the whole table into memory. A note
+  // older than that isn't useful context anyway.
+  const noteWindowStart = (() => {
+    const d = new Date(weekStart + 'T00:00:00Z')
+    d.setUTCDate(d.getUTCDate() - 7 * 52)
+    return d.toISOString().slice(0, 10)
+  })()
 
   // none of these depend on each other, so fire them together
   const [
@@ -200,6 +216,7 @@ export async function buildBriefingContext(weekStart: string) {
 
     admin.from('meeting_notes')
       .select('user_id, week_start, notes, updated_at')
+      .gte('week_start', noteWindowStart)
       .order('week_start', { ascending: false }),
 
     fetchManagerCalendar(admin, 14),
@@ -212,6 +229,14 @@ export async function buildBriefingContext(weekStart: string) {
     if (!drIds.has(o.owner_id)) continue
     if (!objByOwner.has(o.owner_id)) objByOwner.set(o.owner_id, [])
     objByOwner.get(o.owner_id)!.push(o)
+  }
+
+  // Group opportunities by objective once, rather than re-scanning the full list
+  // for every objective in the rollup below.
+  const oppsByObjective = new Map<string, NonNullable<typeof opportunities>>()
+  for (const op of (opportunities || [])) {
+    if (!oppsByObjective.has(op.objective_id)) oppsByObjective.set(op.objective_id, [])
+    oppsByObjective.get(op.objective_id)!.push(op)
   }
 
   // Index check-ins by sub_objective_id and week
@@ -239,7 +264,7 @@ export async function buildBriefingContext(weekStart: string) {
           this_week: checkinIdx.get(`${sub.id}|${weekStart}`) || null,
           last_week: checkinIdx.get(`${sub.id}|${lastWeek}`) || null,
         }))
-      const oppList = (opportunities || []).filter(op => op.objective_id === o.id)
+      const oppList = oppsByObjective.get(o.id) || []
       return {
         title: o.short_title || o.title,
         target_date: o.target_date,

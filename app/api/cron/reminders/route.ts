@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { createHash, timingSafeEqual } from 'crypto'
 import { oauthExpiresAt } from '../../../../lib/utils'
+import { isOneOnOneSubject } from '../../../../lib/calendar-match'
 import type { Database } from '../../../../lib/database.types'
 
 export const dynamic = 'force-dynamic'
@@ -35,19 +36,6 @@ const DEFAULT_TIMEZONE = process.env.APP_TIMEZONE || 'UTC'
 const MANAGER_NAME = process.env.MANAGER_NAME || 'the manager'
 const MANAGER_FIRST = MANAGER_NAME.split(' ')[0].toLowerCase()
 const CALENDAR_MAILBOX = process.env.MANAGER_CALENDAR_EMAIL
-
-// Candidate calendar-subject patterns for a DR's 1:1, built from their first
-// name and the manager's. Covers the common ways people title recurring 1:1s
-// ("Dana 121", "Sam - Dana", "Dana / Sam"). Calendars that don't follow any of
-// these still match on a bare first-name check in isOneOnOneFor().
-function meetingPatternsFor(firstName: string) {
-  const dr = firstName.toLowerCase()
-  return [
-    `${dr} 121`, `${dr} 1:1`, `${dr} 1-1`,
-    `${MANAGER_FIRST} - ${dr}`, `${dr} - ${MANAGER_FIRST}`,
-    `${MANAGER_FIRST} / ${dr}`, `${dr} / ${MANAGER_FIRST}`,
-  ]
-}
 
 function escapeHtml(s: unknown) {
   return String(s ?? '')
@@ -153,19 +141,9 @@ async function getAccessToken(supabaseAdmin: SupabaseClient<Database>) {
   return null
 }
 
-// Does this event look like the DR's 1:1? Either it matches a name-based
-// pattern, or it mentions the DR by first name and reads like a 1:1.
-function isOneOnOneFor(event: GraphEvent, firstName: string) {
-  const subject = event.subject?.toLowerCase() || ''
-  const patterns = meetingPatternsFor(firstName)
-  if (patterns.some(p => subject.includes(p))) return true
-  const looksLike11 = subject.includes('121') || subject.includes('1:1') || subject.includes('1-1')
-  return looksLike11 && subject.includes(firstName)
-}
-
 function findAllMeetingsForDR(events: GraphEvent[], drName: string) {
-  const firstName = drName.split(' ')[0].toLowerCase()
-  return events.filter(e => isOneOnOneFor(e, firstName))
+  const firstName = drName.split(' ')[0]
+  return events.filter(e => isOneOnOneSubject(e.subject, firstName, MANAGER_FIRST))
 }
 
 // Convert Graph dateTime (UTC, possibly without Z suffix) to a YYYY-MM-DD date
