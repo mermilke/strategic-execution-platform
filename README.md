@@ -174,7 +174,8 @@ lib/
   supabase.ts  auth.ts    Browser and server Supabase clients
   briefing-context.ts     Assembles the data the briefing model sees
   utils.ts                Week math and status config
-supabase_setup.sql        Schema, row-level security, triggers
+supabase/migrations/      Schema source of truth (applied by the Supabase CLI)
+supabase_setup.sql        The same schema as one file for the SQL editor (generated)
 seed.sql                  Fictional demo team (optional)
 ```
 

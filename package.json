@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:schema": "node scripts/build-schema.mjs",
+    "check:schema": "node scripts/build-schema.mjs --check"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

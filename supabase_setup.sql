@@ -1,3 +1,14 @@
+-- ============================================================================
+-- supabase_setup.sql
+--
+-- GENERATED FILE -- do not edit by hand.
+-- Built from supabase/migrations/ (the source of truth) by scripts/build-schema.mjs.
+-- To stand up a fresh database, paste this whole file into the Supabase SQL editor.
+-- To regenerate after adding a migration: npm run build:schema
+-- ============================================================================
+
+-- >>> supabase/migrations/20260608000000_initial_schema.sql
+
 -- Strategic Execution Platform, Supabase SQL setup.
 -- Paste this entire file into Supabase > SQL Editor > Run.
 
@@ -41,7 +52,7 @@ CREATE TABLE IF NOT EXISTS sub_objectives (
 CREATE TABLE IF NOT EXISTS weekly_checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sub_objective_id UUID NOT NULL REFERENCES sub_objectives(id) ON DELETE CASCADE,
-  submitted_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  submitted_by UUID NOT NULL REFERENCES users(id),
   week_start DATE NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('not_started', 'on_track', 'at_risk', 'off_track', 'on_hold', 'completed')),
   progress_this_week TEXT,
@@ -305,10 +316,6 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- handle_new_user is a trigger function (fires on auth.users insert regardless
--- of EXECUTE grants), so keep it off the exposed PostgREST RPC surface.
-REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
-
 -- 1:1 meeting notes (collaborative, real-time).
 CREATE TABLE IF NOT EXISTS meeting_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -565,3 +572,22 @@ CREATE INDEX IF NOT EXISTS idx_sub_objectives_obj ON sub_objectives(objective_id
 CREATE INDEX IF NOT EXISTS idx_checkins_submitted_by ON weekly_checkins(submitted_by);
 CREATE INDEX IF NOT EXISTS idx_meeting_attachments_user_week ON meeting_attachments(user_id, week_start);
 CREATE INDEX IF NOT EXISTS idx_reminder_log_user_sent ON reminder_log(user_id, sent_at);
+
+-- >>> supabase/migrations/20260609000000_checkins_submitted_by_cascade.sql
+
+-- weekly_checkins.submitted_by referenced users(id) with no ON DELETE action,
+-- so deleting a user who had submitted a check-in failed the foreign key. Every
+-- other users(id) reference in the schema cascades; bring this one in line.
+ALTER TABLE weekly_checkins
+  DROP CONSTRAINT IF EXISTS weekly_checkins_submitted_by_fkey;
+
+ALTER TABLE weekly_checkins
+  ADD CONSTRAINT weekly_checkins_submitted_by_fkey
+    FOREIGN KEY (submitted_by) REFERENCES users(id) ON DELETE CASCADE;
+
+-- >>> supabase/migrations/20260609000001_handle_new_user_revoke_execute.sql
+
+-- handle_new_user is a trigger function (fires on auth.users insert regardless
+-- of EXECUTE grants), so it never needs to be callable directly. Revoke EXECUTE
+-- to keep it off the exposed PostgREST RPC surface, matching enforce_user_role_guard.
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;

@@ -16,6 +16,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # Fail if supabase_setup.sql was hand-edited instead of regenerated from
+      # the migrations (npm run build:schema).
+      - run: npm run check:schema
       - run: npm test
       # Build needs the public Supabase vars present (not real) so pages can
       # prerender. Real keys are only needed at runtime.
