@@ -97,8 +97,12 @@ export default function Navbar({ user, profile }: {
               style={{ position: 'relative' }}
               onMouseEnter={handleDashDropdownEnter}
               onMouseLeave={handleDashDropdownLeave}
+              onFocus={handleDashDropdownEnter}
+              onBlur={handleDashDropdownLeave}
+              onKeyDown={e => { if (e.key === 'Escape') setShowDashDropdown(false) }}
             >
-              <NavLink href="/dashboard" active={pathname === '/dashboard'} router={router}>
+              <NavLink href="/dashboard" active={pathname === '/dashboard'} router={router}
+                hasPopup expanded={showDashDropdown}>
                 Dashboard
               </NavLink>
               {showDashDropdown && (
@@ -158,8 +162,12 @@ export default function Navbar({ user, profile }: {
               style={{ position: 'relative' }}
               onMouseEnter={handleDropdownEnter}
               onMouseLeave={handleDropdownLeave}
+              onFocus={handleDropdownEnter}
+              onBlur={handleDropdownLeave}
+              onKeyDown={e => { if (e.key === 'Escape') setShowDropdown(false) }}
             >
-              <NavLink href="/meeting" active={pathname === '/meeting'} router={router}>
+              <NavLink href="/meeting" active={pathname === '/meeting'} router={router}
+                hasPopup expanded={showDropdown}>
                 1:1 Notes
               </NavLink>
               {showDropdown && directReports.length > 0 && (
@@ -246,14 +254,19 @@ export default function Navbar({ user, profile }: {
   )
 }
 
-function NavLink({ href, active, children, router }: {
+function NavLink({ href, active, children, router, hasPopup, expanded }: {
   href: string
   active: boolean
   children: ReactNode
   router: { push: (href: string) => void }
+  hasPopup?: boolean
+  expanded?: boolean
 }) {
   return (
-    <button onClick={() => router.push(href)} style={{
+    <button onClick={() => router.push(href)}
+      aria-haspopup={hasPopup || undefined}
+      aria-expanded={hasPopup ? expanded : undefined}
+      style={{
       padding: '6px 14px', borderRadius: 6, fontSize: 13, border: 'none',
       background: active ? 'rgba(37, 99, 235,0.12)' : 'transparent',
       color: active ? '#2563EB' : 'var(--text-muted)',
