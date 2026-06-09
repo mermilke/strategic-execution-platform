@@ -5,15 +5,19 @@ import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
 import ManagerDashboard from '../../components/ManagerDashboard'
 import DirectReportDashboard from '../../components/DirectReportDashboard'
+import type { User } from '@supabase/supabase-js'
+import type { Database } from '../../lib/database.types'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
 
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const viewAsId = searchParams.get('viewAs')
 
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [viewAsProfile, setViewAsProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [viewAsProfile, setViewAsProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -52,7 +56,9 @@ function DashboardContent() {
     </div>
   )
 
-  const isManager = profile?.role === 'manager' || profile?.role === 'admin'
+  if (!profile) return null
+
+  const isManager = profile.role === 'manager' || profile.role === 'admin'
   const isViewingAs = isManager && viewAsProfile
 
   return (

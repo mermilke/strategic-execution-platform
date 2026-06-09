@@ -9,6 +9,10 @@ import DraggableObjList from '../../components/admin/DraggableObjList'
 import type { EditObjState } from '../../components/admin/DraggableObjList'
 import DraggablePendingObjList from '../../components/admin/DraggablePendingObjList'
 import { fmtDate } from '../../lib/utils'
+import type { User } from '@supabase/supabase-js'
+import type { Database } from '../../lib/database.types'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
 
 type AdminSub = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null }
 type AdminObj = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null; sub_objectives?: AdminSub[] | null }
@@ -18,8 +22,8 @@ type PendingObjective = { id: string; pending_user_email: string; title: string;
 
 export default function AdminPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('users')

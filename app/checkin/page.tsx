@@ -5,6 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
 import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
+import type { User } from '@supabase/supabase-js'
+import type { Database } from '../../lib/database.types'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
 
 type CheckinSub = {
   id: string
@@ -50,9 +54,9 @@ function CheckinForm() {
   const focusedSubId = searchParams.get('sub')
   const viewAsId = searchParams.get('viewAs')
 
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [viewAsProfile, setViewAsProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [viewAsProfile, setViewAsProfile] = useState<UserProfile | null>(null)
   const [readOnly, setReadOnly] = useState(false)
   const [objectives, setObjectives] = useState<CheckinObj[]>([])
   // { [objectiveId]: [ { id?, customer, project_description, segment, estimated_value_text, status } ] }
@@ -262,6 +266,7 @@ function CheckinForm() {
       return
     }
 
+    if (!user) return
     setUploading(true)
     const path = `${user.id}/${thisWeek}/${crypto.randomUUID()}-${file.name}`
 
@@ -293,6 +298,7 @@ function CheckinForm() {
   }
 
   async function handleAddLink() {
+    if (!user) return
     const url = linkForm.url.trim()
     if (!url) return
     if (!/^https?:\/\//i.test(url)) {
@@ -334,6 +340,7 @@ function CheckinForm() {
 
   async function saveAll() {
     if (readOnly) return // admin is just viewing this DR's check-in
+    if (!user) return
     const missing = getMissingComments()
     if (missing.length > 0) {
       setCommentErrors(new Set(missing))

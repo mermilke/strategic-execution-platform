@@ -6,6 +6,10 @@ import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
 import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
 import { startOfWeek, format, subWeeks, addWeeks } from 'date-fns'
+import type { User } from '@supabase/supabase-js'
+import type { Database } from '../../lib/database.types'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
 
 type MeetSub = {
   id: string
@@ -26,8 +30,8 @@ function MeetingContent() {
   const searchParams = useSearchParams()
   const initialUserId = searchParams.get('userId')
 
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   // direct reports (manager only)
@@ -213,10 +217,11 @@ function MeetingContent() {
     if (!user || !profile) return
     const isManagerUser = profile.role === 'manager' || profile.role === 'admin'
     if (!isManagerUser) { setCalendarConnected(false); return }
+    const uid = user.id
 
     async function loadCalendar() {
       try {
-        const res = await fetch(`/api/calendar?userId=${user.id}`)
+        const res = await fetch(`/api/calendar?userId=${uid}`)
         if (res.status === 401) {
           setCalendarConnected(false)
           return
@@ -240,6 +245,7 @@ function MeetingContent() {
     setNextMeeting(null)
 
     if (!user || !calendarConnected || !selectedUserId) return
+    const uid = user.id
 
     const selectedUser = directReports.find(r => r.id === selectedUserId)
     if (!selectedUser) return
@@ -256,7 +262,7 @@ function MeetingContent() {
 
     async function loadNextMeeting() {
       try {
-        const res = await fetch(`/api/calendar?userId=${user.id}&search=${encodeURIComponent(searchTerm)}&days=30&limit=1`)
+        const res = await fetch(`/api/calendar?userId=${uid}&search=${encodeURIComponent(searchTerm)}&days=30&limit=1`)
         if (!res.ok || cancelled) return
         const data = await res.json()
         if (cancelled) return
@@ -338,7 +344,7 @@ function MeetingContent() {
     setNotes(value)
 
     // broadcast to the other person on the call
-    if (channelRef.current) {
+    if (channelRef.current && profile) {
       channelRef.current.send({
         type: 'broadcast',
         event: 'notes-update',
