@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS sub_objectives (
 CREATE TABLE IF NOT EXISTS weekly_checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sub_objective_id UUID NOT NULL REFERENCES sub_objectives(id) ON DELETE CASCADE,
-  submitted_by UUID NOT NULL REFERENCES users(id),
+  submitted_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   week_start DATE NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('not_started', 'on_track', 'at_risk', 'off_track', 'on_hold', 'completed')),
   progress_this_week TEXT,
