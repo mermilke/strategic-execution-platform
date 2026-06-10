@@ -70,6 +70,7 @@ function MeetingContent() {
   const channelRef = useRef<any>(null)
   const notesRef = useRef(notes)
   notesRef.current = notes
+  const pendingNotesRef = useRef<string | null>(null) // latest unsaved value, flushed on switch/unmount
 
   // build the week dropdown from the user's check-in history (oldest to current)
   const weekOptions = (() => {
@@ -325,29 +326,44 @@ function MeetingContent() {
     channelRef.current = channel
 
     return () => {
+      // Flush any pending debounced save to the row we're leaving, so switching
+      // user/week or unmounting inside the 1s window doesn't drop the last edits.
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        saveTimeoutRef.current = null
+        if (pendingNotesRef.current !== null) {
+          persistNotes(selectedUserId, selectedWeek, pendingNotesRef.current, profile?.id)
+          pendingNotesRef.current = null
+        }
+      }
       supabase.removeChannel(channel)
       channelRef.current = null
-      clearTimeout(saveTimeoutRef.current ?? undefined)
       clearTimeout(typingTimeoutRef.current ?? undefined)
     }
   }, [selectedUserId, selectedWeek, profile])
 
+  // Bare upsert with no state side effects, so it can run from effect cleanup
+  // (flushing a pending save on unmount) without a setState-after-unmount warning.
+  // Must await the builder: a supabase-js query is a lazy thenable, so calling it
+  // fire-and-forget from cleanup would never dispatch the request.
+  const persistNotes = useCallback(async (userId: string, week: string, value: string, updatedBy?: string) => {
+    await supabase.from('meeting_notes').upsert({
+      user_id: userId,
+      week_start: week,
+      notes: value,
+      updated_at: new Date().toISOString(),
+      updated_by: updatedBy,
+    }, { onConflict: 'user_id,week_start' })
+  }, [])
+
   // debounced save
   const saveNotes = useCallback(async (value: string) => {
     setSaving(true)
-    await supabase
-      .from('meeting_notes')
-      .upsert({
-        user_id: selectedUserId,
-        week_start: selectedWeek,
-        notes: value,
-        updated_at: new Date().toISOString(),
-        updated_by: profile?.id,
-      }, { onConflict: 'user_id,week_start' })
-
+    await persistNotes(selectedUserId, selectedWeek, value, profile?.id)
+    pendingNotesRef.current = null
     setSaving(false)
     setLastSaved(new Date())
-  }, [selectedUserId, selectedWeek, profile])
+  }, [selectedUserId, selectedWeek, profile, persistNotes])
 
   function handleNotesChange(e: ChangeEvent<HTMLTextAreaElement>) {
     const value = e.target.value
@@ -368,6 +384,7 @@ function MeetingContent() {
     }
 
     clearTimeout(saveTimeoutRef.current ?? undefined)
+    pendingNotesRef.current = value
     saveTimeoutRef.current = setTimeout(() => saveNotes(value), 1000)
   }
 
