@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
           {done ? (
             <div className="text-center py-4">
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-              <h2 style={{ fontWeight: 700, fontSize: 16, color: 'white', marginBottom: 8 }}>Password updated!</h2>
+              <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 8 }}>Password updated!</h2>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Redirecting you to the dashboard…</p>
             </div>
           ) : !sessionReady ? (

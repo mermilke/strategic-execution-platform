@@ -153,10 +153,10 @@ export default function LoginPage() {
                   <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
               </div>
-              <h2 style={{ fontWeight: 700, fontSize: 16, color: 'white', marginBottom: 8 }}>Check your email</h2>
+              <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 8 }}>Check your email</h2>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                 {resetSent ? 'A password reset link has been sent to' : 'A magic link has been sent to'}{' '}
-                <strong style={{ color: 'white' }}>{email}</strong>.
+                <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>.
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.6 }}>
                 Check your spam/junk folder if you don't see it within a few minutes.
@@ -217,7 +217,7 @@ export default function LoginPage() {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                     Back to sign in
                   </button>
-                  <h2 style={{ fontWeight: 700, fontSize: 16, color: 'white', marginBottom: 4 }}>Reset your password</h2>
+                  <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 4 }}>Reset your password</h2>
                   <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Enter your email and we'll send you a reset link.</p>
                 </div>
               )}
