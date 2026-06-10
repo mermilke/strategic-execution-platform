@@ -13,10 +13,9 @@ The app includes role-based dashboards, weekly check-ins, shared 1:1 notes,
 calendar-aware reminders, and a Claude-generated weekly briefing through the
 Vercel AI Gateway.
 
-## Live demo
+## Live Demo
 
-[Open the live demo](https://strategic-execution.vercel.app)
-
+[Live Demo](https://strategic-execution.vercel.app)
 Use the demo controls on the login page to view the app as either a manager or a direct report.
 
 ## What this project demonstrates
