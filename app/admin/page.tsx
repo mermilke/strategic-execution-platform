@@ -141,9 +141,11 @@ export default function AdminPage() {
     const reordered = [...userObjs]
     const [moved] = reordered.splice(oldIndex, 1)
     reordered.splice(newIndex, 0, moved)
-    await Promise.all(reordered.map((o, i) =>
+    const results = await Promise.all(reordered.map((o, i) =>
       supabase.from('strategic_objectives').update({ sort_order: i }).eq('id', o.id)
     ))
+    const failed = results.find(r => r.error)
+    if (failed?.error) showMsg('Could not save the new order: ' + failed.error.message, 'error')
     await loadData()
   }
 
@@ -173,9 +175,11 @@ export default function AdminPage() {
     const reordered = [...subs]
     const [moved] = reordered.splice(oldIndex, 1)
     reordered.splice(newIndex, 0, moved)
-    await Promise.all(reordered.map((s, i) =>
+    const results = await Promise.all(reordered.map((s, i) =>
       supabase.from('sub_objectives').update({ sort_order: i }).eq('id', s.id)
     ))
+    const failed = results.find(r => r.error)
+    if (failed?.error) showMsg('Could not save the new order: ' + failed.error.message, 'error')
     await loadData()
   }
 
@@ -268,9 +272,11 @@ export default function AdminPage() {
     const reordered = [...objs]
     const [moved] = reordered.splice(oldIndex, 1)
     reordered.splice(newIndex, 0, moved)
-    await Promise.all(reordered.map((o, i) =>
+    const results = await Promise.all(reordered.map((o, i) =>
       supabase.from('pending_objectives').update({ sort_order: i }).eq('id', o.id)
     ))
+    const failed = results.find(r => r.error)
+    if (failed?.error) showMsg('Could not save the new order: ' + failed.error.message, 'error')
     await loadData()
   }
 
@@ -280,9 +286,11 @@ export default function AdminPage() {
     const reordered = [...subs]
     const [moved] = reordered.splice(oldIndex, 1)
     reordered.splice(newIndex, 0, moved)
-    await Promise.all(reordered.map((s, i) =>
+    const results = await Promise.all(reordered.map((s, i) =>
       supabase.from('pending_sub_objectives').update({ sort_order: i }).eq('id', s.id)
     ))
+    const failed = results.find(r => r.error)
+    if (failed?.error) showMsg('Could not save the new order: ' + failed.error.message, 'error')
     await loadData()
   }
 

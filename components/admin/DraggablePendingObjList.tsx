@@ -42,13 +42,15 @@ export default function DraggablePendingObjList({ objs, email, deletePendingObj,
   }
 
   async function saveAllEdits(obj: PendingObj) {
-    await supabase.from('pending_objectives').update({
+    const { error: objError } = await supabase.from('pending_objectives').update({
       title: editingObjs[obj.id].title, target_date: editingObjs[obj.id].target_date || null,
     }).eq('id', obj.id)
     const subsMap = editingSubsForObj[obj.id] || {}
-    await Promise.all(Object.entries(subsMap).map(([subId, title]) =>
+    const subResults = await Promise.all(Object.entries(subsMap).map(([subId, title]) =>
       supabase.from('pending_sub_objectives').update({ title }).eq('id', subId)
     ))
+    const failed = objError || subResults.find(r => r.error)?.error
+    if (failed) { console.error('Pending save error:', failed); alert('Error saving changes: ' + failed.message) }
     setEditingObjs(prev => { const n = { ...prev }; delete n[obj.id]; return n })
     setEditingSubsForObj(prev => { const n = { ...prev }; delete n[obj.id]; return n })
     await onSave()

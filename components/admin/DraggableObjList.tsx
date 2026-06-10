@@ -60,7 +60,7 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
   }
 
   async function saveAllEdits(obj: Objective) {
-    await supabase.from('strategic_objectives').update({
+    const { error: objError } = await supabase.from('strategic_objectives').update({
       title: editingObjs[obj.id].title, short_title: editingObjs[obj.id].short_title || null, target_date: editingObjs[obj.id].target_date || null,
     }).eq('id', obj.id)
 
@@ -68,8 +68,8 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
     const subResults = await Promise.all(Object.entries(subsMap).map(([subId, val]) =>
       supabase.from('sub_objectives').update({ title: val.title, short_title: val.short_title || null }).eq('id', subId)
     ))
-    const subError = subResults.find(r => r.error)
-    if (subError?.error) { console.error('Sub save error:', subError.error); alert('Error saving sub-objectives: ' + subError.error.message) }
+    const failed = objError || subResults.find(r => r.error)?.error
+    if (failed) { console.error('Objective save error:', failed); alert('Error saving changes: ' + failed.message) }
 
     setEditingObjs(prev => { const n = { ...prev }; delete n[obj.id]; return n })
     setEditingSubsForObj(prev => { const n = { ...prev }; delete n[obj.id]; return n })
