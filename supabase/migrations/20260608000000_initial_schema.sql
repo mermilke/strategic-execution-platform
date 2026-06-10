@@ -165,7 +165,22 @@ CREATE POLICY "checkins_insert_own" ON weekly_checkins FOR INSERT WITH CHECK (
     )
   )
 );
-CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE USING (submitted_by = (select auth.uid()));
+-- Update mirrors insert: you can only edit your own check-in, and the result
+-- must still be self-submitted on a sub-objective you own (or you are an admin),
+-- so a report can't re-point an existing check-in onto someone else's goal.
+CREATE POLICY "checkins_update_own" ON weekly_checkins FOR UPDATE
+USING (submitted_by = (select auth.uid()))
+WITH CHECK (
+  submitted_by = (select auth.uid())
+  AND (
+    EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid()) AND role IN ('manager', 'admin'))
+    OR EXISTS (
+      SELECT 1 FROM sub_objectives s
+      JOIN strategic_objectives o ON o.id = s.objective_id
+      WHERE s.id = sub_objective_id AND o.owner_id = (select auth.uid())
+    )
+  )
+);
 
 -- Trigger: auto-create user profile on signup.
 CREATE OR REPLACE FUNCTION public.handle_new_user()

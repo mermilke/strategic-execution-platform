@@ -106,6 +106,40 @@ describe('weekly_checkins RLS', () => {
     })
     expect(error).toBeNull()
   })
+
+  it('a report can edit the status on their own check-in', async () => {
+    const { error } = await drClient1.from('weekly_checkins')
+      .update({ status: 'at_risk' })
+      .eq('submitted_by', dr1.id).eq('sub_objective_id', sub1.id).eq('week_start', WEEK)
+    expect(error).toBeNull()
+    const { data } = await admin.from('weekly_checkins').select('status')
+      .eq('sub_objective_id', sub1.id).eq('week_start', WEEK).single()
+    expect(data!.status).toBe('at_risk')
+  })
+
+  it('a report cannot re-point their own check-in onto a sub-objective they do not own', async () => {
+    // USING lets them target their own row, but WITH CHECK must reject moving it
+    // onto sub2 (owned by dr2), so the update raises rather than silently succeeding.
+    const { error } = await drClient1.from('weekly_checkins')
+      .update({ sub_objective_id: sub2.id })
+      .eq('submitted_by', dr1.id).eq('sub_objective_id', sub1.id).eq('week_start', WEEK)
+    expect(error).not.toBeNull()
+    const { data } = await admin.from('weekly_checkins').select('sub_objective_id')
+      .eq('submitted_by', dr1.id).eq('week_start', WEEK).single()
+    expect(data!.sub_objective_id).toBe(sub1.id)
+  })
+
+  it('a report cannot modify another report\'s check-in', async () => {
+    // dr2's row is hidden from dr1 by USING, so PostgREST matches zero rows and
+    // returns no error; prove nothing changed by reading back with the service role.
+    const { error } = await drClient1.from('weekly_checkins')
+      .update({ status: 'off_track' })
+      .eq('sub_objective_id', sub2.id).eq('week_start', WEEK)
+    expect(error).toBeNull()
+    const { data } = await admin.from('weekly_checkins').select('status')
+      .eq('sub_objective_id', sub2.id).eq('week_start', WEEK).single()
+    expect(data!.status).toBe('on_track')
+  })
 })
 
 describe('users RLS', () => {
