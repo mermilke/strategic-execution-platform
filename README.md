@@ -3,7 +3,8 @@
 [![CI](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/mermilke/strategic-execution-platform/actions/workflows/ci.yml)
 
 **Live demo:** [strategic-execution.vercel.app](https://strategic-execution.vercel.app)  
-Demo controls are available on the login page for both manager and direct-report views.
+The login page includes demo access for both manager and direct-report views.
+
 
 Strategic Execution Platform is a full-stack web app for keeping long-term
 strategic goals visible between formal review cycles. Each direct report spends
