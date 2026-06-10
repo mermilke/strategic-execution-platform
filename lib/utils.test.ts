@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, oauthExpiresAt } from './utils'
+import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, fmtDate, STATUS_CONFIG, oauthExpiresAt } from './utils'
 import type { StatusKey } from './utils'
 
 const dayOf = (yyyymmdd: string) => new Date(yyyymmdd + 'T00:00:00').getDay()
@@ -17,6 +17,18 @@ describe('week helpers', () => {
 
   it('formatWeekLabel reads like a date a person would write', () => {
     expect(formatWeekLabel('2026-06-01')).toBe('Week of Jun 1, 2026')
+  })
+})
+
+describe('fmtDate', () => {
+  it('renders a bare YYYY-MM-DD on the same calendar day in any timezone', () => {
+    // Parsed as local midnight, not UTC, so it never slips to the prior day.
+    expect(fmtDate('2026-06-06')).toBe('Jun 6, 2026')
+  })
+
+  it('returns an empty string for a missing value', () => {
+    expect(fmtDate(null)).toBe('')
+    expect(fmtDate(undefined)).toBe('')
   })
 })
 

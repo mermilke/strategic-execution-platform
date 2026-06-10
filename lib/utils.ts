@@ -90,8 +90,12 @@ export function toLetter(i: number): string {
 }
 
 // Format a date value as "Jun 6, 2026", or "" when missing. Used across the admin lists.
+// A bare YYYY-MM-DD parses as UTC midnight, which renders as the prior day in
+// negative-offset zones; anchor those to local midnight like formatWeekLabel does.
 export function fmtDate(d: string | number | Date | null | undefined): string {
-  return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
+  if (!d) return ''
+  const date = typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T00:00:00') : new Date(d)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 // Microsoft's OAuth token response gives expires_in as seconds until expiry.
