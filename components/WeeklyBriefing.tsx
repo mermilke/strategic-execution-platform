@@ -6,8 +6,9 @@ import BriefingContent from './briefing/BriefingContent'
 import DevPanel from './briefing/DevPanel'
 import type { Briefing, BriefingMeta } from './briefing/types'
 
-// On the public demo the briefing is view-only: visitors see the cached
-// briefing but can't trigger a paid generation.
+// On the public demo a visitor can generate a briefing for an empty week (it's
+// cached and shared afterward), but the Regenerate control stays hidden so an
+// already-filled week can't be re-run repeatedly.
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 // Weekly briefing card: streams a 5-section exec briefing for the selected week
@@ -192,7 +193,7 @@ export default function WeeklyBriefing({ selectedWeek, currentUser }: {
               Generating…
             </span>
           )}
-          {status === 'no_briefing' && !showSpinner && !collapsed && !DEMO_MODE && (
+          {status === 'no_briefing' && !showSpinner && !collapsed && (
             <button onClick={() => runStream(false)} style={btnPrimary}>
               ✨ Generate briefing
             </button>

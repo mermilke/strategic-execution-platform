@@ -152,10 +152,12 @@ async function sessionClient() {
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 // Generating needs the service-role key (to read across reports) and an AI
-// gateway key. It's also off on the public demo so a visitor can't run up the
-// AI bill; the demo just serves the pre-generated briefing.
+// gateway key. On the public demo it's still allowed -- the first visitor to
+// open an empty week generates it once and it's cached for everyone -- but
+// regeneration is blocked in the POST handler so nobody can run up the bill on
+// an already-filled week.
 function canGenerate() {
-  return !DEMO_MODE && !!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.AI_GATEWAY_API_KEY
+  return !!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.AI_GATEWAY_API_KEY
 }
 
 type AuthCtx = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>
@@ -192,9 +194,6 @@ export const maxDuration = 60 // seconds (Vercel Fluid Compute)
 export async function POST(request: Request) {
   const gate = await gateRequest()
   if (gate.error) return NextResponse.json({ error: gate.error }, { status: gate.status })
-  if (DEMO_MODE) {
-    return NextResponse.json({ error: 'Briefing generation is disabled in the demo.' }, { status: 403 })
-  }
   if (!canGenerate()) {
     return NextResponse.json({ error: 'Weekly briefing is not configured in this environment.' }, { status: 503 })
   }
@@ -204,6 +203,20 @@ export async function POST(request: Request) {
   const { week_start, regenerate = false } = body
   if (!week_start || !/^\d{4}-\d{2}-\d{2}$/.test(week_start)) {
     return NextResponse.json({ error: 'Missing or invalid week_start' }, { status: 400 })
+  }
+
+  // Bound the week to today or earlier. Past weeks are naturally finite, but
+  // without this a caller could POST arbitrary future weeks and trigger an
+  // unbounded number of paid generations.
+  if (week_start > new Date().toISOString().slice(0, 10)) {
+    return NextResponse.json({ error: 'week_start cannot be in the future' }, { status: 400 })
+  }
+
+  // On the public demo a visitor can populate an empty week once (it's then
+  // cached and served to everyone), but regeneration is off so an already-filled
+  // week can't be re-run repeatedly to drive up the AI bill.
+  if (DEMO_MODE && regenerate) {
+    return NextResponse.json({ error: 'Regeneration is disabled in the demo.' }, { status: 403 })
   }
 
   const admin = newAdmin()
