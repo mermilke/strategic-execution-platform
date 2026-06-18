@@ -592,7 +592,7 @@ function MeetingContent() {
                       opacity: isDiscuss ? 1 : 0.45,
                       transition: 'opacity 0.2s',
                     }}>
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="checkin-card-head flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 min-w-0 flex-1">
                           <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1 }}>📌</span>
                           <span className="text-xs font-medium" style={{ color: statusCfg?.hex || 'var(--text-secondary)', lineHeight: 1.4 }}>
@@ -600,7 +600,7 @@ function MeetingContent() {
                           </span>
                         </div>
                         {c && statusCfg && (
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="checkin-card-badges flex items-center gap-1.5 flex-shrink-0">
                             {c.discuss_in_meeting && (
                               <span style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 3,

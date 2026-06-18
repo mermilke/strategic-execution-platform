@@ -111,6 +111,13 @@ input:focus, textarea:focus, select:focus {
 
   /* Pull in the generous desktop page gutters so content gets more width. */
   main.mx-auto.px-6 { padding-left: 14px !important; padding-right: 14px !important; }
+
+  /* 1:1 check-in summary cards: on a phone, drop the status badges onto their
+     own line under the title and let them wrap. On desktop the title and badges
+     share a row, but at phone width that row crushes a long sub-objective title
+     to one word per line. */
+  .checkin-card-head { flex-direction: column; gap: 6px; }
+  .checkin-card-head > .checkin-card-badges { flex-wrap: wrap; margin-left: 20px; }
 }
 
 /* diagonal stripe on the login page */
