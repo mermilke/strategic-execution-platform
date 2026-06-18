@@ -93,6 +93,26 @@ input:focus, textarea:focus, select:focus {
   color: var(--brand-red);
 }
 
+/* ----------------------------------------------------------------------------
+   Responsive: a mobile-only layer. All rules are gated to <= 767px, so the
+   desktop layout (>= 768px) is completely unaffected. Helpers toggle elements
+   between the desktop and mobile presentations; the !important is needed only
+   to override inline display styles on the components.
+---------------------------------------------------------------------------- */
+.nav-mobile-only { display: none; }
+@media (max-width: 767px) {
+  .nav-desktop-only { display: none !important; }
+  .nav-mobile-only { display: flex !important; }
+
+  /* Two-column splits (e.g. the 1:1 page) stack vertically on a phone, and a
+     desktop-only fixed viewport height is released so the panels flow. */
+  .stack-on-mobile { flex-direction: column !important; height: auto !important; }
+  .stack-on-mobile > * { width: 100% !important; }
+
+  /* Pull in the generous desktop page gutters so content gets more width. */
+  main.mx-auto.px-6 { padding-left: 14px !important; padding-right: 14px !important; }
+}
+
 /* diagonal stripe on the login page */
 .brand-stripe {
   background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-slate) 100%);

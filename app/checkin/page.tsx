@@ -556,8 +556,8 @@ function CheckinForm() {
                       )}
 
                       {/* status pills and checkboxes share a row */}
-                      <div className="flex items-center gap-6">
-                        <div className="flex gap-1 flex-shrink-0">
+                      <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6">
+                        <div className="flex flex-wrap gap-1 md:flex-nowrap md:flex-shrink-0">
                           {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
                             <button
                               key={val}

@@ -426,7 +426,7 @@ function MeetingContent() {
       <Navbar user={user} profile={profile} />
 
       <main className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0 mb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               {selectedUserName
@@ -436,7 +436,7 @@ function MeetingContent() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* user picker, manager only */}
             {isManager && (
               <div className="relative">
@@ -550,7 +550,7 @@ function MeetingContent() {
 
         {/* split view */}
         {selectedUserId ? (
-          <div className="flex gap-6" style={{ height: 'calc(100vh - 200px)' }}>
+          <div className="flex gap-6 stack-on-mobile" style={{ height: 'calc(100vh - 200px)' }}>
             {/* left: check-in summary */}
             <div className="rounded-xl p-5 overflow-y-auto" style={{
               width: '45%', flexShrink: 0,

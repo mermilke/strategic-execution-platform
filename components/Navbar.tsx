@@ -15,6 +15,7 @@ export default function Navbar({ user, profile }: {
   const [directReports, setDirectReports] = useState<Array<{ id: string; full_name: string | null }>>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [showDashDropdown, setShowDashDropdown] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const dropdownTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dashDropdownTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -34,6 +35,12 @@ export default function Navbar({ user, profile }: {
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  // Navigate from the mobile menu and close it.
+  function go(href: string) {
+    setMobileOpen(false)
+    router.push(href)
   }
 
   function handleDropdownEnter() {
@@ -87,7 +94,8 @@ export default function Navbar({ user, profile }: {
           </span>
         </div>
 
-        {/* Divider */}
+        {/* Divider + nav links (desktop only) */}
+        <div className="nav-desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
         <div style={{ width: 1, height: 20, background: 'rgba(37, 99, 235,0.2)' }} />
 
         {/* Nav links */}
@@ -139,7 +147,7 @@ export default function Navbar({ user, profile }: {
                         e.currentTarget.style.color = 'var(--text-secondary)'
                       }}
                     >
-                      {key === 'analytics' ? '\uD83D\uDCCA ' : ''}{label}
+                      {key === 'analytics' ? '📊 ' : ''}{label}
                     </button>
                   ))}
                 </div>
@@ -222,9 +230,11 @@ export default function Navbar({ user, profile }: {
             </NavLink>
           )}
         </div>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* User + sign out (desktop only) */}
+      <div className="nav-desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {profile?.full_name || user?.email}
         </span>
@@ -250,7 +260,88 @@ export default function Navbar({ user, profile }: {
           Sign out
         </button>
       </div>
+
+      {/* Hamburger (mobile only) */}
+      <button
+        className="nav-mobile-only"
+        aria-label="Menu"
+        aria-haspopup="true"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen(o => !o)}
+        style={{
+          alignItems: 'center', justifyContent: 'center',
+          width: 38, height: 38, borderRadius: 8,
+          background: mobileOpen ? 'rgba(37, 99, 235,0.1)' : 'transparent',
+          border: '1px solid var(--border-subtle)', cursor: 'pointer',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          {mobileOpen
+            ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+            : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>}
+        </svg>
+      </button>
+
+      {/* Mobile dropdown panel */}
+      {mobileOpen && (
+        <div
+          className="nav-mobile-only"
+          style={{
+            position: 'absolute', top: 60, left: 0, right: 0,
+            flexDirection: 'column', alignItems: 'stretch', gap: 2,
+            padding: 12,
+            background: 'rgba(255,255,255,0.98)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(37, 99, 235,0.15)',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.08)',
+          }}
+        >
+          {isManager ? (
+            <>
+              <MobileLink onClick={() => go('/dashboard')} active={pathname === '/dashboard'}>Dashboard</MobileLink>
+              <MobileLink onClick={() => go('/dashboard?view=analytics')}>📊 Analytics</MobileLink>
+              <MobileLink onClick={() => go('/meeting')} active={pathname === '/meeting'}>1:1 Notes</MobileLink>
+              <MobileLink onClick={() => go('/admin')} active={pathname === '/admin'}>Manage Team</MobileLink>
+            </>
+          ) : (
+            <>
+              <MobileLink onClick={() => go('/dashboard')} active={pathname === '/dashboard'}>My Dashboard</MobileLink>
+              <MobileLink onClick={() => go('/checkin')} active={pathname === '/checkin'}>Weekly Check-in</MobileLink>
+              <MobileLink onClick={() => go('/meeting')} active={pathname === '/meeting'}>1:1 Notes</MobileLink>
+            </>
+          )}
+          <div style={{ height: 1, background: 'var(--border-subtle)', margin: '8px 4px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{profile?.full_name || user?.email}</span>
+            {isManager && (
+              <span style={{
+                fontSize: 10, padding: '3px 8px', borderRadius: 4, fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                background: 'rgba(37, 99, 235,0.1)', color: '#2563EB', border: '1px solid rgba(37, 99, 235,0.2)',
+              }}>
+                {profile?.role === 'admin' ? 'Admin' : 'Manager'}
+              </span>
+            )}
+          </div>
+          <MobileLink onClick={() => { setMobileOpen(false); handleSignOut() }}>Sign out</MobileLink>
+        </div>
+      )}
     </nav>
+  )
+}
+
+function MobileLink({ children, onClick, active }: { children: ReactNode; onClick: () => void; active?: boolean }) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'block', width: '100%', textAlign: 'left',
+      padding: '11px 12px', borderRadius: 8, fontSize: 15, border: 'none',
+      background: active ? 'rgba(37, 99, 235,0.1)' : 'transparent',
+      color: active ? '#2563EB' : 'var(--text-secondary)',
+      fontWeight: active ? 600 : 400, cursor: 'pointer',
+    }}>
+      {children}
+    </button>
   )
 }
 
