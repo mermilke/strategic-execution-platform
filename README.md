@@ -80,6 +80,8 @@ The manager's team overview, with every report's objectives at a glance:
   completed, and record whether any progress was made.
 - Flag items that need manager support or should be discussed in the next 1:1.
 - Add optional comments when more context helps.
+- For sub-objectives set to a quarterly or monthly tracking style, fill in that
+  item's structured list instead of the weekly status.
 
 ### Manager and admin workflow
 
@@ -91,6 +93,10 @@ The manager's team overview, with every report's objectives at a glance:
 - Per-person history with the full week-by-week trail for any objective.
 - Opportunity objectives -- count-based goals (say, "close 5 enterprise pilots")
   with the individual deals listed under them.
+- Configurable tracking per sub-objective. Most run on the weekly status
+  check-in, but one can be set to a quarterly cadence (a training log that needs
+  a completed session each quarter) or a month-by-month grid, and the dashboard
+  renders each one's own progress in place of the weekly bar.
 - An analytics view with status trends across the team.
 - Shared 1:1 notes per person per week, with file and link attachments and the
   next scheduled 1:1 pulled from the calendar.
@@ -105,8 +111,11 @@ The manager's team overview, with every report's objectives at a glance:
   day before their 1:1. The logic reads the calendar, so it can tell "not due
   yet" from "overdue" from "your 1:1 was cancelled," and it stops once the
   check-in is in.
-- The reminder endpoint is protected with a cron secret and triggered by GitHub
-  Actions.
+- The weekly AI briefing can be pre-generated early Monday by a second scheduled
+  job, so the first person to open the dashboard sees a finished briefing instead
+  of waiting for it to stream.
+- Both cron endpoints are protected with a shared cron secret and triggered by
+  GitHub Actions.
 
 ## Tech stack
 
@@ -178,12 +187,16 @@ app/
     ai/insights/          Streams and caches the weekly briefing
     calendar/             Microsoft Graph calendar reads
     cron/reminders/       Timezone- and calendar-aware reminder emails
+    cron/briefing/        Monday pre-generation of the weekly briefing
     smartsheet/           Optional "Other Topics" feed
-    auth/  admin/         OAuth callback, admin password reset
+    auth/  admin/         OAuth callback, admin password reset, start-week
 components/               Dashboards, briefing UI, charts, navbar, badges
+  subkinds/               Training and monthly tracking editors
 lib/
   supabase.ts  auth.ts    Browser and server Supabase clients
   briefing-context.ts     Assembles the data the briefing model sees
+  briefing-shared.ts      Model, schema, prompt shared by the stream + cron
+  subkinds.ts             Training/monthly progress; loadSpecial.ts loads it
   calendar-match.ts       Shared 1:1 calendar matcher and Graph event type
   utils.ts                Week math and status config
 supabase/migrations/      Schema source of truth (applied by the Supabase CLI)
@@ -262,12 +275,14 @@ fails CI rather than slipping through (see
 ## Deploying
 
 Import the repo into Vercel and add the same environment variables in the
-project settings. The reminder schedule lives in
-[`.github/workflows/reminder-cron.yml`](.github/workflows/reminder-cron.yml),
-which pings the deployed `/api/cron/reminders` endpoint at a handful of UTC
-times so it catches 4pm in each region. Set an `APP_URL` Actions variable (your
-deployed base URL) and a `CRON_SECRET` Actions secret that matches the
-`CRON_SECRET` you set on Vercel.
+project settings. Two scheduled workflows live under `.github/workflows/`:
+[`reminder-cron.yml`](.github/workflows/reminder-cron.yml) pings the deployed
+`/api/cron/reminders` endpoint at a handful of UTC times so it catches 4pm in
+each region, and [`briefing-cron.yml`](.github/workflows/briefing-cron.yml)
+pings `/api/cron/briefing` on Monday morning to pre-generate the week's briefing.
+Set an `APP_URL` Actions variable (your deployed base URL) and a `CRON_SECRET`
+Actions secret that matches the `CRON_SECRET` you set on Vercel; both workflows
+no-op cleanly until those are set.
 
 ## Optional integrations
 

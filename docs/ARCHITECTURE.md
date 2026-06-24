@@ -19,11 +19,18 @@ enforcement boundary, not the UI.
 
 The core of the schema is a handful of tables, all keyed off Supabase auth:
 
-- `users` -- profile + role (`manager`, `admin`, `direct_report`) + timezone, one row
-  per auth user, created by a trigger on signup.
+- `users` -- profile + role (`manager`, `admin`, `direct_report`) + timezone + an
+  optional `start_week` ("week 0" for the stale counter, below which weeks aren't
+  counted as missed), one row per auth user, created by a trigger on signup.
 - `strategic_objectives` and `sub_objectives` -- the goal tree. An objective can
   carry an `opportunity_target` to become a count-based goal (e.g. "close 5
-  pilots"), in which case its deals live in `objective_opportunities`.
+  pilots"), in which case its deals live in `objective_opportunities`. A
+  sub-objective's `kind` selects how it's tracked: `standard` (the weekly
+  check-in), `training` (quarterly sessions in `training_sessions`), or `monthly`
+  (a 12-month grid in `monthly_checks`).
+- `training_sessions` / `monthly_checks` -- the structured lists for the two
+  special sub-kinds, each row-level-secured to the sub's owner (a `SECURITY
+  DEFINER owns_sub` helper) or a manager.
 - `weekly_checkins` -- one row per sub-objective per week (`UNIQUE(sub_objective_id,
   week_start)`), holding the status (a text field constrained to a fixed set of
   values) and the report's notes.
@@ -41,8 +48,10 @@ and check-ins; a `manager` or `admin` can see everyone. The browser uses the pub
 anon key, so even though the client talks to Postgres directly, RLS decides what
 it's allowed to touch.
 
-Three things need to bypass RLS: the AI briefing (reads across all reports), the
-reminder cron (reads everyone to decide who to email), and admin password resets.
+A few things need to bypass RLS: the AI briefing (reads across all reports), the
+two crons (reminders, and Monday briefing pre-generation), admin password resets,
+and setting a report's start week -- the `users` table only lets a row's owner
+update it, so the admin writes another report's start week through a server route.
 Those run only in server route handlers with the service-role key, never in the
 browser.
 
@@ -64,6 +73,12 @@ This is the most involved feature. The flow:
    provider's cache window only pays for the new output tokens, because the long
    context block is marked for prompt caching. Token counts and a cost estimate
    are stored per briefing.
+
+The model, schema, prompt, costing, and write path live in
+`lib/briefing-shared.ts`, so a second caller can reuse them without drifting: a
+Monday cron (`app/api/cron/briefing/route.ts`) pre-generates the week's briefing
+non-streaming and caches it, and the dashboard then loads it instantly on the
+first open instead of streaming.
 
 If the AI gateway or service-role key isn't configured, the route reports the
 feature as dormant and the card shows a quiet "not enabled" state instead of an
