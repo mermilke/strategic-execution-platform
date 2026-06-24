@@ -496,6 +496,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_implicit: boolean | null
+          kind: string
           objective_id: string
           short_title: string | null
           sort_order: number | null
@@ -507,6 +508,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_implicit?: boolean | null
+          kind?: string
           objective_id: string
           short_title?: string | null
           sort_order?: number | null
@@ -518,6 +520,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_implicit?: boolean | null
+          kind?: string
           objective_id?: string
           short_title?: string | null
           sort_order?: number | null
@@ -529,6 +532,91 @@ export type Database = {
             columns: ["objective_id"]
             isOneToOne: false
             referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          created_at: string | null
+          follow_up: string | null
+          id: string
+          next_steps: string | null
+          participants: string | null
+          results: string | null
+          session_date: string | null
+          sort_order: number | null
+          sub_objective_id: string
+          topic: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          follow_up?: string | null
+          id?: string
+          next_steps?: string | null
+          participants?: string | null
+          results?: string | null
+          session_date?: string | null
+          sort_order?: number | null
+          sub_objective_id: string
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          follow_up?: string | null
+          id?: string
+          next_steps?: string | null
+          participants?: string | null
+          results?: string | null
+          session_date?: string | null
+          sort_order?: number | null
+          sub_objective_id?: string
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_sub_objective_id_fkey"
+            columns: ["sub_objective_id"]
+            isOneToOne: false
+            referencedRelation: "sub_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_checks: {
+        Row: {
+          id: string
+          month: string
+          note: string | null
+          status: string
+          sub_objective_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          month: string
+          note?: string | null
+          status?: string
+          sub_objective_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          month?: string
+          note?: string | null
+          status?: string
+          sub_objective_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_checks_sub_objective_id_fkey"
+            columns: ["sub_objective_id"]
+            isOneToOne: false
+            referencedRelation: "sub_objectives"
             referencedColumns: ["id"]
           },
         ]
