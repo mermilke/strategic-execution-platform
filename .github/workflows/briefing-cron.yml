@@ -1,0 +1,64 @@
+name: Weekly briefing pre-generation
+
+# Pings /api/cron/briefing early Monday so the week's executive briefing is
+# already cached when a manager opens the dashboard, instead of streaming for
+# ~17s on the first visit. The endpoint is idempotent -- it skips a week that
+# already has a briefing -- so firing at two UTC times to cover DST is harmless.
+#
+# 12:00 UTC -> 7am US Central CDT (summer, UTC-5)
+# 13:00 UTC -> 7am US Central CST (winter, UTC-6)
+# Adjust to taste; the endpoint computes the current week in APP_TIMEZONE.
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force regeneration even if a briefing already exists (1 = yes).'
+        required: false
+        default: ''
+      week_start:
+        description: 'Override the week (YYYY-MM-DD, must be a Monday). Leave blank for the current week.'
+        required: false
+        default: ''
+
+jobs:
+  pregenerate-briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit briefing pre-generation endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Set this to your deployed base URL (no trailing slash) under
+          # Settings -> Secrets and variables -> Actions -> Variables.
+          APP_URL: ${{ vars.APP_URL }}
+          FORCE: ${{ inputs.force }}
+          WEEK_START: ${{ inputs.week_start }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL is not set, so there is no deployment to ping. Skipping."
+            echo "Set the APP_URL Actions variable (and CRON_SECRET secret) to enable pre-generation."
+            exit 0
+          fi
+          base="$APP_URL/api/cron/briefing"
+          params=()
+          [ -n "$FORCE" ] && params+=("force=$FORCE")
+          [ -n "$WEEK_START" ] && params+=("week_start=$WEEK_START")
+          url="$base"
+          if [ ${#params[@]} -gt 0 ]; then
+            url="$base?$(IFS='&'; echo "${params[*]}")"
+          fi
+          echo "GET $url"
+          response=$(curl -sS -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$url")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "Status: $status"
+          echo "Body: $body"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Briefing endpoint returned $status"
+            exit 1
+          fi
