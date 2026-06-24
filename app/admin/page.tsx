@@ -16,7 +16,7 @@ type UserProfile = Database['public']['Tables']['users']['Row']
 
 type AdminSub = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null }
 type AdminObj = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null; sub_objectives?: AdminSub[] | null }
-type AdminUser = { id: string; full_name?: string | null; email: string; role?: string | null; strategic_objectives?: AdminObj[] | null }
+type AdminUser = { id: string; full_name?: string | null; email: string; role?: string | null; start_week?: string | null; strategic_objectives?: AdminObj[] | null }
 type PendingSubObj = { id: string; title: string; sort_order?: number | null }
 type PendingObjective = { id: string; pending_user_email: string; title: string; target_date?: string | null; sort_order?: number | null; created_at?: string | null; pending_sub_objectives?: PendingSubObj[] | null }
 type PendingUser = Database['public']['Tables']['pending_users']['Row']
@@ -74,6 +74,21 @@ export default function AdminPage() {
   function showMsg(text: string, type = 'success') {
     setMsg({ text, type })
     setTimeout(() => setMsg({ text: '', type: 'success' }), 3000)
+  }
+
+  // Set a report's "week 0" (snapped to that week's Monday by the server); clears
+  // when emptied. Goes through an admin-gated route because users UPDATE is RLS-
+  // locked to the row owner, so the manager can't write another report's row directly.
+  async function saveStartWeek(userId: string, value: string) {
+    const res = await fetch('/api/admin/start-week', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, date: value || null }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) { showMsg(body.error || 'Could not save start week', 'error'); return }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, start_week: body.start_week } : u))
+    showMsg(body.start_week ? 'Start week set' : 'Start week cleared')
   }
 
   async function addObjective() {
@@ -447,6 +462,20 @@ export default function AdminPage() {
 
                   {isExpanded && (
                     <div className="p-5 space-y-3">
+                      {/* Start week (week 0): weeks before this aren't counted as stale */}
+                      <div className="flex items-center gap-2 flex-wrap pb-1">
+                        <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Start week (week 0):</label>
+                        <input
+                          type="date"
+                          value={u.start_week || ''}
+                          onChange={e => saveStartWeek(u.id, e.target.value)}
+                          className="text-xs px-2 py-1 rounded"
+                          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        {u.start_week
+                          ? <span className="text-xs" style={{ color: 'var(--text-muted)' }}>weeks before this aren&apos;t counted as stale</span>
+                          : <span className="text-xs" style={{ color: 'var(--text-muted)' }}>defaults to their first check-in</span>}
+                      </div>
                       <DraggableObjList
                         objs={activeObjs}
                         userId={u.id}

@@ -47,4 +47,18 @@ describe('calcWeeksNoProgress', () => {
     const s = sub([{ week_start: '2026-01-05', progress_this_week: true }])
     expect(calcWeeksNoProgress(s, descending, last)).toBe(2)
   })
+
+  it('does not count weeks at or before the start week', () => {
+    // with no check-ins all three weeks would count, but a start week of the
+    // first week leaves only the two weeks after it as missed
+    expect(calcWeeksNoProgress(sub([]), weeks, last, '2026-01-05')).toBe(2)
+  })
+
+  it('counts nothing when the start week is the selected week', () => {
+    expect(calcWeeksNoProgress(sub([]), weeks, last, last)).toBe(0)
+  })
+
+  it('ignores the start week when it is null (default behaviour)', () => {
+    expect(calcWeeksNoProgress(sub([]), weeks, last, null)).toBe(3)
+  })
 })

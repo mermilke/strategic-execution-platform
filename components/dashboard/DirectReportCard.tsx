@@ -84,7 +84,7 @@ export default function DirectReportCard({
 
         {/* alert chips */}
         {(() => {
-          const staleCount = (u.objectives || []).flatMap(o => o.sub_objectives).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length
+          const staleCount = (u.objectives || []).flatMap(o => o.sub_objectives).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek) >= 2).length
           return (u.atRisk > 0 || u.needsSupport > 0 || u.offTrack > 0 || staleCount > 0) ? (
           <div className="flex flex-wrap gap-1.5 ml-11">
             {u.atRisk > 0 && (
@@ -122,12 +122,12 @@ export default function DirectReportCard({
               : filterStatus === 'not_submitted' ? obj.sub_objectives.filter(s => !s.thisWeekCheckin)
               : filterStatus === 'at_risk' ? obj.sub_objectives.filter(s => s.thisWeekCheckin?.status === 'at_risk')
               : filterStatus === 'needs_support' ? obj.sub_objectives.filter(s => s.thisWeekCheckin?.support_needed?.trim())
-              : filterStatus === 'stale' ? obj.sub_objectives.filter(s => calcWeeksNoProgress(s, weekOptions, selectedWeek) >= 2)
+              : filterStatus === 'stale' ? obj.sub_objectives.filter(s => calcWeeksNoProgress(s, weekOptions, selectedWeek, u.startWeek) >= 2)
               : obj.sub_objectives
             if (filterStatus !== 'all' && visibleSubs.length === 0) return null
             const openObjHistory = () => { setExpandedModalSubs(new Set()); setHistoryModal({ type: 'objective', title: obj.title, userName: u.full_name, subs: obj.sub_objectives }) }
             return (
-            <div key={obj.id} id={`obj-${obj.id}`}>
+            <div key={obj.id} id={`obj-${obj.id}`} style={{ scrollMarginTop: 80 }}>
               <div className="mb-3" style={{ letterSpacing: '0.02em' }}>
                 <span
                   role="button" tabIndex={0} aria-label={`Open history for ${obj.title}`}
@@ -176,7 +176,7 @@ export default function DirectReportCard({
               <div className="space-y-2 pl-4">
                 {visibleSubs.map((sub, subIdx) => {
                   const c = sub.thisWeekCheckin
-                  const weeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek)
+                  const weeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek)
                   const tint = statusTint(c?.status)
                   const openSubHistory = () => setHistoryModal({ type: 'sub', title: sub.title, userName: u.full_name, subs: [sub] })
                   return (

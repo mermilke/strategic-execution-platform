@@ -51,6 +51,10 @@ export type DashUser = {
   needsSupport: number
   offTrack: number
   objectives: DashObjective[]
+  // explicit "week 0" from admin, if set
+  start_week?: string | null
+  // resolved week 0 used by the stale counter: start_week, else first check-in week
+  startWeek?: string | null
 }
 
 // The history modal opens for a single sub-objective or a whole objective's subs.

@@ -45,7 +45,7 @@ export default function ManagerDashboard({ currentUser }: {
         if (val === 'not_submitted') return u.submitted < u.totalSubs
         if (val === 'at_risk') return u.atRisk > 0
         if (val === 'needs_support') return u.needsSupport > 0
-        if (val === 'stale') return (u.objectives || []).flatMap(o => o.sub_objectives).some(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2)
+        if (val === 'stale') return (u.objectives || []).flatMap(o => o.sub_objectives).some(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek) >= 2)
         return true
       }).map(u => u.id)
       setExpandedUsers(new Set(matching))
@@ -148,7 +148,13 @@ export default function ManagerDashboard({ currentUser }: {
       const notStarted = allCheckins.filter(c => c.status === 'not_started').length
       const needsSupport = allCheckins.filter(c => c.support_needed && c.support_needed.trim()).length
 
-      return { ...u, objectives: objWithCheckins, totalSubs, submitted, atRisk, offTrack, onHold, notStarted, needsSupport }
+      // "Week 0" for the stale counter: an explicit start_week, else the report's
+      // first check-in ever, else none (brand new -- nothing counts as stale yet).
+      const checkinWeeks = objWithCheckins.flatMap(o => o.sub_objectives.flatMap(s => s.weekly_checkins || [])).map(c => c.week_start).filter(Boolean)
+      const firstCheckinWeek = checkinWeeks.length ? checkinWeeks.reduce((a, b) => (a < b ? a : b)) : null
+      const startWeek = u.start_week || firstCheckinWeek || null
+
+      return { ...u, objectives: objWithCheckins, totalSubs, submitted, atRisk, offTrack, onHold, notStarted, needsSupport, startWeek }
     })
 
     setData(enriched as unknown as DashUser[])
@@ -159,14 +165,14 @@ export default function ManagerDashboard({ currentUser }: {
     if (filterStatus === 'not_submitted') return u.submitted < u.totalSubs
     if (filterStatus === 'at_risk') return u.atRisk > 0
     if (filterStatus === 'needs_support') return u.needsSupport > 0
-    if (filterStatus === 'stale') return (u.objectives || []).flatMap(o => o.sub_objectives).some(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2)
+    if (filterStatus === 'stale') return (u.objectives || []).flatMap(o => o.sub_objectives).some(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek) >= 2)
     return true
   })
 
   const totalAtRisk = data.reduce((sum, u) => sum + u.atRisk, 0)
   const totalNeedsSupport = data.reduce((sum, u) => sum + u.needsSupport, 0)
   const totalNotSubmitted = data.filter(u => u.submitted < u.totalSubs).length
-  const staleCount = data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives)).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek) >= 2).length
+  const staleCount = data.flatMap(u => (u.objectives || []).flatMap(o => o.sub_objectives).filter(sub => calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek) >= 2)).length
 
   if (loading) return <Spinner />
 

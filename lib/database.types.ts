@@ -540,6 +540,7 @@ export type Database = {
           full_name: string
           id: string
           role: string
+          start_week: string | null
           timezone: string | null
         }
         Insert: {
@@ -548,6 +549,7 @@ export type Database = {
           full_name: string
           id: string
           role: string
+          start_week?: string | null
           timezone?: string | null
         }
         Update: {
@@ -556,6 +558,7 @@ export type Database = {
           full_name?: string
           id?: string
           role?: string
+          start_week?: string | null
           timezone?: string | null
         }
         Relationships: []

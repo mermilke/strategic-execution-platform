@@ -25,14 +25,20 @@ type SubObjective = {
 // normally ascending, but we sort a copy here so the count is correct even if a
 // caller passes it the other way round (week_start is YYYY-MM-DD, so a plain
 // string sort is chronological).
+//
+// startWeek is the report's "week 0" (their explicit start week, else their first
+// check-in). Weeks at or before it are never counted, so a freshly added report
+// doesn't show a large stale number before they have begun checking in.
 export function calcWeeksNoProgress(
   sub: SubObjective,
   weekOptions: string[],
-  selectedWeek: string
+  selectedWeek: string,
+  startWeek?: string | null
 ): number {
   const weeks = [...weekOptions].sort()
   const selectedIdx = weeks.indexOf(selectedWeek)
-  const relevantWeeks = selectedIdx >= 0 ? weeks.slice(0, selectedIdx + 1) : weeks
+  let relevantWeeks = selectedIdx >= 0 ? weeks.slice(0, selectedIdx + 1) : weeks
+  if (startWeek) relevantWeeks = relevantWeeks.filter(w => w > startWeek)
 
   // completed subs don't need updates
   const latestCheckin = [...relevantWeeks].reverse().reduce<Checkin | null | undefined>(

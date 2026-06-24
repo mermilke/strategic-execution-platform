@@ -120,6 +120,13 @@ input:focus, textarea:focus, select:focus {
   .checkin-card-head > .checkin-card-badges { flex-wrap: wrap; margin-left: 20px; }
 }
 
+/* Snapshot tiles: equal-height rows on desktop so a row of tiles lines up
+   regardless of how many objectives each holds. Left off below 768px, where the
+   grid is a single column and equal rows would just add dead space. */
+@media (min-width: 768px) {
+  .tile-grid { grid-auto-rows: 1fr; }
+}
+
 /* diagonal stripe on the login page */
 .brand-stripe {
   background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-slate) 100%);

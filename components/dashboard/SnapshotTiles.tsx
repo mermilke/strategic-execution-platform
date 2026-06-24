@@ -16,7 +16,7 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
   setHighlightedSub: Dispatch<SetStateAction<string | null>>
 }) {
   return (
-    <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+    <div className="grid gap-3 mb-8 tile-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
       {data.map(u => {
         const expandUser = () => {
           setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
@@ -36,15 +36,28 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
             >{u.full_name}</div>
             <div className="space-y-1.5">
               {u.objectives?.map((obj, oi) => {
+                const expandObj = () => {
+                  setExpandedUsers(prev => { const n = new Set(prev); n.add(u.id); return n; })
+                  setTimeout(() => {
+                    const el = document.getElementById(`obj-${obj.id}`)
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }, 120)
+                }
                 return (
                   <div key={obj.id}>
-                    <div className="truncate mt-1 mb-0.5" style={{ fontSize: 10, fontWeight: 600, color: '#D62027', letterSpacing: '0.02em' }}>
+                    <div className="truncate mt-1 mb-0.5 cursor-pointer" style={{ fontSize: 10, fontWeight: 600, color: '#D62027', letterSpacing: '0.02em', cursor: 'pointer' }}
+                      role="button" tabIndex={0} aria-label={`Jump to ${obj.short_title || obj.title}`} title={obj.title}
+                      onClick={expandObj}
+                      onKeyDown={onActivate(expandObj)}
+                      onMouseOver={e => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseOut={e => e.currentTarget.style.textDecoration = 'none'}
+                    >
                       {oi + 1}. {obj.short_title || obj.title}
                     </div>
                     {(obj.sub_objectives || []).map((sub, si) => {
                       const c = sub.thisWeekCheckin
                       const status = c?.status || 'not_started'
-                      const subWeeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek)
+                      const subWeeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek)
                       const barColor = STATUS_BAR_COLOR[status] || '#94A3B8'
                       const subLabel = sub.is_implicit ? `${oi + 1}.` : `${oi + 1}${toLetter(si)}.`
                       // opportunity objective: one bar, length is % of opportunities filled, color is the check-in status
