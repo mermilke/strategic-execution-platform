@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
 import { getCurrentWeekStart, getLastWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
+import { isSpecialKind } from '../../lib/subkinds'
+import SubKindBlock from '../../components/subkinds/SubKindBlock'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '../../lib/database.types'
 
@@ -15,6 +17,7 @@ type MeetingAttachment = Database['public']['Tables']['meeting_attachments']['Ro
 type CheckinSub = {
   id: string
   title: string
+  kind?: string | null
   is_active?: boolean | null
   is_implicit?: boolean | null
   sort_order?: number | null
@@ -532,6 +535,15 @@ function CheckinForm() {
                 return (
               <div className={onlyImplicit ? '' : 'grid grid-cols-2 gap-1.5'}>
                 {activeSubs.map((sub, subIdx) => {
+                  // Training/monthly subs carry their own structured list instead
+                  // of the weekly status form, and span the full width.
+                  if (isSpecialKind(sub.kind)) {
+                    return (
+                      <div key={sub.id} className={onlyImplicit ? '' : 'col-span-2'}>
+                        <SubKindBlock sub={sub} subLabel={sub.is_implicit ? null : toLetter(subIdx)} />
+                      </div>
+                    )
+                  }
                   const entry = formState[sub.id] || {}
                   const lastStatus = lastWeekState[sub.id]
                   const statusCfg = entry.status ? STATUS_CONFIG[entry.status as StatusKey] : null
