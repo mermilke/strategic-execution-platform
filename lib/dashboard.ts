@@ -1,5 +1,6 @@
 // Pure helpers for the manager dashboard, kept out of the component so they can be unit tested.
 import { STATUS_HEX } from './utils'
+import { LIST_ONLY_KINDS } from './subkinds'
 
 // Bar fill % for the snapshot tiles, keyed by status.
 export const STATUS_PROGRESS: Record<string, number> = { completed: 100, on_track: 85, at_risk: 50, off_track: 18, on_hold: 10, not_started: 5 }
@@ -16,6 +17,7 @@ type Checkin = {
 }
 
 type SubObjective = {
+  kind?: string | null
   weekly_checkins?: Checkin[] | null
 }
 
@@ -35,6 +37,9 @@ export function calcWeeksNoProgress(
   selectedWeek: string,
   startWeek?: string | null
 ): number {
+  // Training/monthly subs track their own structured list, not the weekly
+  // cadence, so they never count toward the "no update" stale tracker.
+  if (sub.kind && LIST_ONLY_KINDS.includes(sub.kind)) return 0
   const weeks = [...weekOptions].sort()
   const selectedIdx = weeks.indexOf(selectedWeek)
   let relevantWeeks = selectedIdx >= 0 ? weeks.slice(0, selectedIdx + 1) : weeks

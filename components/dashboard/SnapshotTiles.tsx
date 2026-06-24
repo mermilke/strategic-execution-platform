@@ -1,6 +1,7 @@
 'use client'
 import type { Dispatch, SetStateAction } from 'react'
 import { calcWeeksNoProgress, STATUS_PROGRESS, STATUS_BAR_COLOR } from '../../lib/dashboard'
+import { MONTHS, MONTHLY_STATUSES } from '../../lib/subkinds'
 import { toLetter } from '../../lib/utils'
 import { onActivate } from '../../lib/a11y'
 import type { DashUser } from './types'
@@ -58,16 +59,24 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
                       const c = sub.thisWeekCheckin
                       const status = c?.status || 'not_started'
                       const subWeeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek)
-                      const barColor = STATUS_BAR_COLOR[status] || '#94A3B8'
                       const subLabel = sub.is_implicit ? `${oi + 1}.` : `${oi + 1}${toLetter(si)}.`
+                      // training/monthly sub: the bar is its own structured-list progress
+                      const special = sub.special
                       // opportunity objective: one bar, length is % of opportunities filled, color is the check-in status
-                      const isOpp = !!obj.opportunity_target
+                      const isOpp = !special && !!obj.opportunity_target
                       const oppFilled = isOpp
                         ? (obj.objective_opportunities || []).filter(r =>
                             r.customer || r.project_description || r.segment || r.estimated_value_text).length
                         : 0
                       const oppTarget = obj.opportunity_target || 0
-                      const pct = isOpp
+                      const barColor = special
+                        ? (special.complete ? '#34D399' : '#2563EB')
+                        : isOpp
+                        ? (oppFilled >= oppTarget ? '#34D399' : '#2563EB')
+                        : (STATUS_BAR_COLOR[status] || '#94A3B8')
+                      const pct = special
+                        ? special.pct
+                        : isOpp
                         ? Math.min(100, Math.round((oppFilled / oppTarget) * 100))
                         : (STATUS_PROGRESS[status] || 5)
                       const openSub = () => {
@@ -111,16 +120,33 @@ export default function SnapshotTiles({ data, weekOptions, selectedWeek, setExpa
                               </svg>
                             </span>
                           </div>
-                          <div className="flex-1 min-w-0" style={{ height: 6, borderRadius: 3, background: 'var(--bg-elevated)' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: barColor, transition: 'width 0.3s' }} />
-                          </div>
+                          {special?.kind === 'monthly' ? (
+                            // one segment per month, colored by its status
+                            <div className="flex-1 min-w-0 flex" style={{ height: 6, gap: 1 }}>
+                              {MONTHS.map(m => {
+                                const st = special.byMonth?.[m.key] || 'not_started'
+                                const hex = MONTHLY_STATUSES.find(s => s.key === st)?.hex
+                                return <div key={m.key} title={m.label} style={{ flex: 1, height: '100%', borderRadius: 1, background: st === 'not_started' ? 'var(--bg-elevated)' : hex }} />
+                              })}
+                            </div>
+                          ) : (
+                            <div className="flex-1 min-w-0" style={{ height: 6, borderRadius: 3, background: 'var(--bg-elevated)' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: barColor, transition: 'width 0.3s' }} />
+                            </div>
+                          )}
+                          {special && (
+                            <div title={special.label}
+                              style={{ color: special.complete ? '#34D399' : 'var(--text-secondary)', fontSize: 9, fontWeight: 700, flexShrink: 0, lineHeight: '6px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                              {special.short}
+                            </div>
+                          )}
                           {isOpp && (
                             <div title={`${oppFilled} of ${oppTarget} opportunities`}
                               style={{ color: oppFilled >= oppTarget ? '#34D399' : 'var(--text-secondary)', fontSize: 9, fontWeight: 700, flexShrink: 0, lineHeight: '6px', display: 'flex', alignItems: 'center' }}>
                               {oppFilled}/{oppTarget}
                             </div>
                           )}
-                          {!isOpp && subWeeksStale >= 2 && (
+                          {!special && !isOpp && subWeeksStale >= 2 && (
                             <div title={`${subWeeksStale} weeks since update`}
                               style={{ color: '#D62027', fontSize: 9, fontWeight: 700, flexShrink: 0, lineHeight: '6px', display: 'flex', alignItems: 'center' }}>
                               {subWeeksStale}

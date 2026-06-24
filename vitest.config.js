@@ -14,6 +14,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    // Dummy public Supabase env so the browser client (created at module load in
+    // lib/supabase) constructs without throwing when a component under test pulls
+    // it into its import graph. Unit tests don't hit the network.
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
     // Integration tests need a live Supabase stack; they run via their own config
     // (npm run test:integration), not the default fast suite.
     exclude: [...configDefaults.exclude, 'tests/integration/**'],

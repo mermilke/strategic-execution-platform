@@ -3,6 +3,8 @@ import type { Dispatch, SetStateAction } from 'react'
 import StatusBadge from '../StatusBadge'
 import { statusTint, toLetter } from '../../lib/utils'
 import { calcWeeksNoProgress } from '../../lib/dashboard'
+import { isSpecialKind } from '../../lib/subkinds'
+import SubKindBlock from '../subkinds/SubKindBlock'
 import { onActivate } from '../../lib/a11y'
 import type { DashUser, HistoryModalState } from './types'
 
@@ -119,7 +121,7 @@ export default function DirectReportCard({
           )}
           {u.objectives.map((obj, objIdx) => {
             const visibleSubs = filterStatus === 'all' ? obj.sub_objectives
-              : filterStatus === 'not_submitted' ? obj.sub_objectives.filter(s => !s.thisWeekCheckin)
+              : filterStatus === 'not_submitted' ? obj.sub_objectives.filter(s => !s.thisWeekCheckin && !isSpecialKind(s.kind))
               : filterStatus === 'at_risk' ? obj.sub_objectives.filter(s => s.thisWeekCheckin?.status === 'at_risk')
               : filterStatus === 'needs_support' ? obj.sub_objectives.filter(s => s.thisWeekCheckin?.support_needed?.trim())
               : filterStatus === 'stale' ? obj.sub_objectives.filter(s => calcWeeksNoProgress(s, weekOptions, selectedWeek, u.startWeek) >= 2)
@@ -175,6 +177,14 @@ export default function DirectReportCard({
               })() : null}
               <div className="space-y-2 pl-4">
                 {visibleSubs.map((sub, subIdx) => {
+                  // Training/monthly subs show their own structured list (read-only).
+                  if (isSpecialKind(sub.kind)) {
+                    return (
+                      <div key={sub.id} id={`sub-${sub.id}`} style={{ scrollMarginTop: 80 }}>
+                        <SubKindBlock sub={sub} subLabel={sub.is_implicit ? null : toLetter(subIdx)} readOnly />
+                      </div>
+                    )
+                  }
                   const c = sub.thisWeekCheckin
                   const weeksStale = calcWeeksNoProgress(sub, weekOptions, selectedWeek, u.startWeek)
                   const tint = statusTint(c?.status)

@@ -2,6 +2,7 @@
 // ManagerDashboard from a set of Supabase joins (objectives -> sub-objectives ->
 // weekly check-ins, plus opportunities), then handed to the presentational
 // components below. These types capture only the fields those components read.
+import type { SpecialProgress } from '../../lib/subkinds'
 
 export type DashCheckin = {
   week_start: string
@@ -28,6 +29,9 @@ export type DashSub = {
   title: string
   short_title?: string | null
   is_implicit?: boolean | null
+  kind?: string | null
+  // progress descriptor for a training/monthly sub, attached by attachSpecialProgress
+  special?: SpecialProgress | null
   thisWeekCheckin?: DashCheckin | null
   weekly_checkins?: DashCheckin[] | null
 }

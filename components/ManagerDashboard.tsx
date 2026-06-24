@@ -7,6 +7,8 @@ import Spinner from './Spinner'
 import HistoryModal from './HistoryModal'
 import { getCurrentWeekStart, formatWeekLabel } from '../lib/utils'
 import { calcWeeksNoProgress } from '../lib/dashboard'
+import { isSpecialKind } from '../lib/subkinds'
+import { attachSpecialProgress } from '../lib/loadSpecial'
 import { startOfWeek, format } from 'date-fns'
 
 // recharts is heavy and only used on the analytics view, so load it on demand
@@ -140,7 +142,9 @@ export default function ManagerDashboard({ currentUser }: {
 
 
       const allCheckins = objWithCheckins.flatMap(o => o.sub_objectives.map(s => s.thisWeekCheckin)).filter((c): c is NonNullable<typeof c> => !!c)
-      const totalSubs = objWithCheckins.flatMap(o => o.sub_objectives).length
+      // Training/monthly subs aren't on the weekly cadence, so they don't count
+      // toward the submitted X/Y tally.
+      const totalSubs = objWithCheckins.flatMap(o => o.sub_objectives).filter(s => !isSpecialKind(s.kind)).length
       const submitted = allCheckins.length
       const atRisk = allCheckins.filter(c => c.status === 'at_risk').length
       const offTrack = allCheckins.filter(c => c.status === 'off_track').length
@@ -156,6 +160,9 @@ export default function ManagerDashboard({ currentUser }: {
 
       return { ...u, objectives: objWithCheckins, totalSubs, submitted, atRisk, offTrack, onHold, notStarted, needsSupport, startWeek }
     })
+
+    // Load each training/monthly sub's structured-list progress onto sub.special.
+    await Promise.all(enriched.map(u => attachSpecialProgress(u.objectives)))
 
     setData(enriched as unknown as DashUser[])
     setLoading(false)
