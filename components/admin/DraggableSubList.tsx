@@ -9,17 +9,27 @@ type SubRow = {
   short_title?: string | null
   created_at?: string | null
   sort_order?: number | null
+  kind?: string | null
 }
 
-// Read-only, drag-reorderable list of sub-objective rows. Sub-objectives are edited
-// through the parent objective's Edit mode, so there are no per-row controls here.
-// `reorder(objId, subId, newIndex, oldIndex)` persists a move. `showMeta` adds the
-// short_title and created-date annotations used for real (non-pending) sub-objectives.
-export default function DraggableSubList({ subs, objId, reorder, showMeta = false }: {
+// How a sub is tracked. 'standard' uses the weekly check-in; the others carry
+// their own structured list (see lib/subkinds).
+const KIND_OPTIONS = [
+  { value: 'standard', label: 'Weekly check-in' },
+  { value: 'training', label: 'Quarterly training' },
+  { value: 'monthly', label: 'Monthly grid' },
+]
+
+// Read-only, drag-reorderable list of sub-objective rows. `reorder(objId, subId,
+// newIndex, oldIndex)` persists a move. `showMeta` adds the short_title and
+// created-date annotations used for real (non-pending) sub-objectives.
+// `onKindChange`, when given, shows a per-row tracking-kind selector.
+export default function DraggableSubList({ subs, objId, reorder, showMeta = false, onKindChange }: {
   subs: SubRow[]
   objId: string
   reorder: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   showMeta?: boolean
+  onKindChange?: (subId: string, kind: string) => void
 }) {
   const { onDragStart, onDragEnter, onDragEnd, move, announcement, setGripRef } = useReorder(objId, subs.length, reorder, 'sub-objective', true)
 
@@ -48,6 +58,20 @@ export default function DraggableSubList({ subs, objId, reorder, showMeta = fals
             {showMeta && sub.short_title && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>({sub.short_title})</span>}
           </span>
           {showMeta && sub.created_at && <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.5 }} title={"Created " + fmtDate(sub.created_at)}>Created: {fmtDate(sub.created_at)}</span>}
+          {onKindChange && (
+            <select
+              value={sub.kind || 'standard'}
+              onChange={e => onKindChange(sub.id, e.target.value)}
+              onMouseDown={e => e.stopPropagation()}
+              draggable={false}
+              onDragStart={e => { e.preventDefault(); e.stopPropagation() }}
+              title="How this sub-objective is tracked"
+              className="flex-shrink-0 text-xs rounded"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 4px', cursor: 'pointer' }}
+            >
+              {KIND_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          )}
         </div>
       ))}
     </>

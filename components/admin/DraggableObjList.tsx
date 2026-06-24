@@ -32,7 +32,7 @@ type EditSubState = Record<string, Record<string, { title?: string; short_title?
 // Drag-reorderable list of a person's active strategic objectives. Each card flips
 // into an Edit mode that lets the manager rename the objective and all of its
 // sub-objectives at once, archive/delete either, and add new sub-objectives.
-export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave }: {
+export default function DraggableObjList({ objs, userId, editingObjs, setEditingObjs, archiveObj, deleteObj, archiveSub, deleteSub, restoreSub, addSubToObj, reorderObj, reorderSub, onSave, onKindChange }: {
   objs: Objective[]
   userId: string
   editingObjs: EditObjState
@@ -46,6 +46,7 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
   reorderObj: (userId: string, objId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   reorderSub: (objId: string, subId: string, newIndex: number, oldIndex: number) => void | Promise<void>
   onSave: () => void | Promise<void>
+  onKindChange?: (subId: string, kind: string) => void
 }) {
   const [editingSubsForObj, setEditingSubsForObj] = useState<EditSubState>({}) // { [objId]: { [subId]: title } }
   const { onDragStart, onDragEnter, onDragEnd, move, announcement, setGripRef } = useReorder(userId, objs.length, reorderObj, 'objective')
@@ -196,6 +197,7 @@ export default function DraggableObjList({ objs, userId, editingObjs, setEditing
                   objId={obj.id}
                   reorder={reorderSub}
                   showMeta
+                  onKindChange={onKindChange}
                 />
               )}
 

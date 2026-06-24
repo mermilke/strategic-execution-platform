@@ -14,7 +14,7 @@ import type { Database } from '../../lib/database.types'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
-type AdminSub = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null }
+type AdminSub = { id: string; title: string; kind?: string | null; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null }
 type AdminObj = { id: string; title: string; is_active?: boolean | null; sort_order?: number | null; created_at?: string | null; updated_at?: string | null; sub_objectives?: AdminSub[] | null }
 type AdminUser = { id: string; full_name?: string | null; email: string; role?: string | null; start_week?: string | null; strategic_objectives?: AdminObj[] | null }
 type PendingSubObj = { id: string; title: string; sort_order?: number | null }
@@ -74,6 +74,16 @@ export default function AdminPage() {
   function showMsg(text: string, type = 'success') {
     setMsg({ text, type })
     setTimeout(() => setMsg({ text: '', type: 'success' }), 3000)
+  }
+
+  // Change how a sub-objective is tracked (standard weekly vs training/monthly).
+  // users UPDATE is owner-locked, but sub_objectives UPDATE allows manager/admin,
+  // so this client write is fine.
+  async function saveKind(subId: string, kind: string) {
+    const { error } = await supabase.from('sub_objectives').update({ kind }).eq('id', subId)
+    if (error) { showMsg('Could not change tracking kind: ' + error.message, 'error'); return }
+    showMsg('Tracking kind updated')
+    await loadData()
   }
 
   // Set a report's "week 0" (snapped to that week's Monday by the server); clears
@@ -490,6 +500,7 @@ export default function AdminPage() {
                         reorderObj={reorderObj}
                         reorderSub={reorderSub}
                         onSave={loadData}
+                        onKindChange={saveKind}
                       />
 
                       {activeObjs.length === 0 && (
