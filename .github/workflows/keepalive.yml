@@ -1,0 +1,47 @@
+name: Keep Supabase awake
+
+# Free-tier Supabase projects pause after 7 days with no database activity.
+# This runs a tiny read against the REST API once a day so the demo project
+# never goes idle long enough to pause. Daily (rather than every few days)
+# because GitHub can delay or drop scheduled runs under load, and a paused
+# demo means the live portfolio link is down.
+#
+# Set two repo-level Actions VARIABLES (Settings -> Secrets and variables ->
+# Actions -> Variables tab), not secrets -- both values are public (the anon
+# key is shipped to every browser and is gated by row-level security):
+#   SUPABASE_URL       e.g. https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  the project's anon/publishable key
+# When unset the job skips cleanly, so a fork with no project stays green.
+
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read one row so the database stays active
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "SUPABASE_URL / SUPABASE_ANON_KEY are not set, so there is no project to keep awake. Skipping."
+            echo "Set both as Actions variables to enable the keepalive."
+            exit 0
+          fi
+          # A real PostgREST read hits Postgres (row-level security narrows the
+          # anon result to empty, but the query still runs -- that is the point).
+          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/strategic_objectives?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "REST status: $status"
+          # Any HTTP status means the project answered and is awake. Only a
+          # connection failure (curl returns 000) is a real problem.
+          if [ -z "$status" ] || [ "$status" = "000" ]; then
+            echo "::error::No response from Supabase -- the project may be paused or unreachable."
+            exit 1
+          fi
