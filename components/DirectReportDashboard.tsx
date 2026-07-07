@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import StatusBadge from './StatusBadge'
 import Spinner from './Spinner'
 import { getCurrentWeekStart, formatWeekLabel, statusTint, bySortOrder } from '../lib/utils'
+import { isSpecialKind } from '../lib/subkinds'
+import SubKindBlock from './subkinds/SubKindBlock'
 import { startOfWeek, format } from 'date-fns'
 
 const toLetter = (i: number) => String.fromCharCode(65 + i)
@@ -23,6 +25,7 @@ type DRCheckin = {
 type DRSub = {
   id: string
   title: string
+  kind: string | null
   is_active: boolean | null
   sort_order: number | null
   weekly_checkins: DRCheckin[] | null
@@ -113,7 +116,9 @@ export default function DirectReportDashboard({ currentUser }: {
     setLoading(false)
   }
 
-  const totalSubs = objectives.flatMap(o => o.sub_objectives || []).length
+  // Training/monthly subs track their own structured list, not a weekly check-in,
+  // so they sit off the weekly cadence and don't count toward the submitted tally.
+  const totalSubs = objectives.flatMap(o => o.sub_objectives || []).filter(s => !isSpecialKind(s.kind)).length
   const submitted = Object.keys(checkinMap).length
   const allDone = totalSubs > 0 && submitted >= totalSubs
   const isCurrentWeek = selectedWeek === thisWeek
@@ -214,6 +219,14 @@ export default function DirectReportDashboard({ currentUser }: {
 
             <div className="space-y-2 pl-4">
               {(obj.sub_objectives || []).filter(s => s.is_active !== false).map((sub, subIdx) => {
+                // Training/monthly subs show their own structured list (read-only).
+                if (isSpecialKind(sub.kind)) {
+                  return (
+                    <div key={sub.id}>
+                      <SubKindBlock sub={sub} subLabel={toLetter(subIdx)} readOnly />
+                    </div>
+                  )
+                }
                 const c = checkinMap[sub.id]
                 const status = c?.status
                 const tint = statusTint(status)
