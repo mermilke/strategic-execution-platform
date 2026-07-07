@@ -6,12 +6,10 @@ name: Keep Supabase awake
 # because GitHub can delay or drop scheduled runs under load, and a paused
 # demo means the live portfolio link is down.
 #
-# Set two repo-level Actions VARIABLES (Settings -> Secrets and variables ->
-# Actions -> Variables tab), not secrets -- both values are public (the anon
-# key is shipped to every browser and is gated by row-level security):
-#   SUPABASE_URL       e.g. https://xxxx.supabase.co
-#   SUPABASE_ANON_KEY  the project's anon/publishable key
-# When unset the job skips cleanly, so a fork with no project stays green.
+# The URL and key below are the project's PUBLIC values: the anon key is the
+# same one shipped to every browser that loads the app, and it only grants
+# what row-level security allows. So it is safe to keep here in the clear --
+# no repo settings or secrets to configure.
 
 on:
   schedule:
@@ -23,15 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Read one row so the database stays active
-        env:
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "SUPABASE_URL / SUPABASE_ANON_KEY are not set, so there is no project to keep awake. Skipping."
-            echo "Set both as Actions variables to enable the keepalive."
-            exit 0
-          fi
+          SUPABASE_URL="https://ajibcieakvepbuuivtbg.supabase.co"
+          SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqaWJjaWVha3ZlcGJ1dWl2dGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTk4MTUsImV4cCI6MjA5NjMzNTgxNX0.VuCU2FTNY-haEwrAlumQWk7Zw2gWw_KcirMkEwpA-4M"
           # A real PostgREST read hits Postgres (row-level security narrows the
           # anon result to empty, but the query still runs -- that is the point).
           status=$(curl -sS -o /dev/null -w "%{http_code}" \
