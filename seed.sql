@@ -216,6 +216,24 @@ BEGIN
   PERFORM _seed_sub(o, u, 'Build high-fidelity prototypes', 'Prototypes', 2, ARRAY['not_started','on_track'], 'First two screens prototyped.');
   o := _seed_obj(u, 'Raise the usability score above 85', 'Usability', 3);
   PERFORM _seed_sub(o, u, 'Fix the top ten friction points', 'Top friction', 1, ARRAY['on_track','on_track'], 'Six of ten fixed.');
+  -- Two non-weekly items for Yuki, to show the training and monthly tracking
+  -- kinds. These track their own structured lists (kind), not weekly check-ins,
+  -- so on every view they render as their own block instead of a status card.
+  o := _seed_obj(u, 'Build team capability', 'Team capability', 4);
+  INSERT INTO sub_objectives (objective_id, title, short_title, sort_order, is_active, kind)
+    VALUES (o, 'Run quarterly design-craft training', 'Craft training', 1, true, 'training') RETURNING id INTO s;
+  -- Two complete sessions covering Q1 and Q2 of the current year, so the sub
+  -- reads 2 of 4 quarters covered.
+  INSERT INTO training_sessions (sub_objective_id, session_date, topic, participants, follow_up, next_steps, results, sort_order) VALUES
+    (s, (date_trunc('year', now()) + interval '14 days')::date, 'Accessibility fundamentals for designers', 'Whole design team', 'Share the WCAG checklist', 'Audit two flows against it', 'Ran a live audit of the onboarding flow', 0),
+    (s, (date_trunc('year', now()) + interval '3 months' + interval '9 days')::date, 'Design tokens deep dive', 'Design plus two engineers', 'Document the token pipeline', 'Adopt tokens in the next component', 'Everyone shipped a tokenized component', 1);
+  INSERT INTO sub_objectives (objective_id, title, short_title, sort_order, is_active, kind)
+    VALUES (o, 'Hold the monthly portfolio review', 'Monthly reviews', 2, true, 'monthly') RETURNING id INTO s;
+  -- First five months of the current year done, the sixth in progress: 5 of 12.
+  INSERT INTO monthly_checks (sub_objective_id, month, status)
+  SELECT s, to_char(date_trunc('year', now()) + (n || ' months')::interval, 'YYYY-MM'),
+         CASE WHEN n < 5 THEN 'done' WHEN n = 5 THEN 'in_progress' ELSE 'not_started' END
+  FROM generate_series(0, 5) AS g(n);
 
   INSERT INTO meeting_notes (user_id, week_start, notes, updated_by) VALUES
     ((SELECT id FROM users WHERE email = 'dana.whitfield@example.com'), wk0, E'- EUR billing: pick the vendor by Friday.\n- Wizard demo looked good, ship to beta next week.', manager),
