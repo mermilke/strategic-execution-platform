@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../../components/Navbar'
 import { getCurrentWeekStart, formatWeekLabel, STATUS_CONFIG, type StatusKey } from '../../lib/utils'
+import { isSpecialKind } from '../../lib/subkinds'
+import SubKindBlock from '../../components/subkinds/SubKindBlock'
 import { startOfWeek, format, subWeeks, addWeeks } from 'date-fns'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '../../lib/database.types'
@@ -18,6 +20,7 @@ type DirectReport = Pick<Database['public']['Tables']['users']['Row'], 'id' | 'f
 type MeetSub = {
   id: string
   title: string
+  kind?: string | null
   is_active?: boolean | null
   sort_order?: number | null
   created_at?: string | null
@@ -582,6 +585,15 @@ function MeetingContent() {
                 const hasAnyNonDiscuss = allObjData.some(d => d.withoutDiscuss.length > 0)
 
                 const renderSubCard = (sub: MeetSub, subIdx: number, c: Checkin | null | undefined, isDiscuss: boolean) => {
+                  // Training/monthly subs track their own structured list, so show that
+                  // (read-only) instead of a weekly status card.
+                  if (isSpecialKind(sub.kind)) {
+                    return (
+                      <div key={sub.id} style={{ opacity: isDiscuss ? 1 : 0.45, transition: 'opacity 0.2s' }}>
+                        <SubKindBlock sub={sub} subLabel={toLetter(subIdx)} readOnly titleClassName="text-xs font-medium mb-2" titleColor="var(--text-secondary)" />
+                      </div>
+                    )
+                  }
                   const statusCfg = c ? STATUS_CONFIG[c.status as StatusKey] : null
                   const lc = lastWeekCheckins[sub.id]
                   const lastCfg = c && lc && lc.status !== c.status ? STATUS_CONFIG[lc.status as StatusKey] : null
